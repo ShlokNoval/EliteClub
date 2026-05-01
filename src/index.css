@@ -1,0 +1,349 @@
+@import "tailwindcss";
+@source "./";
+@source "../index.html";
+
+/* ═══════════════════════════════════════════════
+   EliteClub — Royal Dark Luxury Theme
+   ═══════════════════════════════════════════════ */
+
+@theme {
+  --color-black-deep: #050505;
+  --color-black-primary: #0A0A0A;
+  --color-black-card: #111111;
+  --color-black-elevated: #1A1A1A;
+  --color-black-border: #222222;
+
+  --color-burgundy: #6B1D2A;
+  --color-burgundy-light: #8B2E3F;
+  --color-burgundy-dark: #4A1520;
+  --color-burgundy-glow: #9B3A50;
+
+  --color-gold: #C9A94E;
+  --color-gold-light: #E8D48B;
+  --color-gold-dark: #A08530;
+  --color-gold-muted: #8A7A3F;
+
+  --color-champagne: #F5E6CC;
+  --color-champagne-dark: #D4C4A8;
+  --color-smoke: #999999;
+  --color-ash: #666666;
+
+  --color-success: #2ECC71;
+  --color-warning: #F39C12;
+  --color-danger: #E74C3C;
+  --color-info: #3498DB;
+
+  --font-playfair: 'Playfair Display', serif;
+  --font-inter: 'Inter', sans-serif;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow-pulse 3s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.5s ease-in-out infinite;
+}
+
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #0A0A0A;
+  color: #F5E6CC;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ═══ Editorial Noise Overlay ═══ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+  opacity: 0.8;
+}
+
+/* ═══ Custom Utilities ═══ */
+@layer utilities {
+  .stroke-text {
+    -webkit-text-stroke: 2px rgba(201, 169, 78, 0.2);
+    color: transparent;
+  }
+  
+  .bottle-mask {
+    -webkit-mask-image: radial-gradient(ellipse at center, black 65%, transparent 80%);
+    mask-image: radial-gradient(ellipse at center, black 65%, transparent 80%);
+  }
+}
+
+::selection {
+  background: rgba(201, 169, 78, 0.3);
+  color: #F5E6CC;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #C9A94E, #6B1D2A);
+  border-radius: 3px;
+}
+
+/* ═══ Glassmorphism Utilities ═══ */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(201, 169, 78, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(201, 169, 78, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(17, 17, 17, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(201, 169, 78, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(201, 169, 78, 0.25);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(201, 169, 78, 0.08);
+  transform: translateY(-2px);
+}
+
+/* ═══ Gold Gradient Text ═══ */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #E8D48B 0%, #C9A94E 40%, #A08530 70%, #C9A94E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══ Burgundy Gradient ═══ */
+.bg-burgundy-gradient {
+  background: linear-gradient(135deg, #6B1D2A 0%, #8B2E3F 50%, #4A1520 100%);
+}
+
+/* ═══ Gold Border Glow ═══ */
+.gold-border-glow {
+  position: relative;
+}
+
+.gold-border-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(201, 169, 78, 0.3), rgba(201, 169, 78, 0.05), rgba(201, 169, 78, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ═══ Animations ═══ */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(201, 169, 78, 0.1); }
+  50% { box-shadow: 0 0 40px rgba(201, 169, 78, 0.25); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-10vh) scale(1);
+    opacity: 0;
+  }
+}
+
+/* ═══ Premium Button Styles ═══ */
+.btn-gold {
+  background: linear-gradient(135deg, #C9A94E, #A08530);
+  color: #050505;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gold::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.btn-gold:hover::before {
+  transform: translateX(100%);
+}
+
+.btn-gold:hover {
+  box-shadow: 0 0 30px rgba(201, 169, 78, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-burgundy {
+  background: linear-gradient(135deg, #6B1D2A, #8B2E3F);
+  color: #F5E6CC;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(201, 169, 78, 0.15);
+}
+
+.btn-burgundy:hover {
+  box-shadow: 0 0 25px rgba(107, 29, 42, 0.4);
+  border-color: rgba(201, 169, 78, 0.3);
+  transform: translateY(-1px);
+}
+
+/* ═══ Membership Card ═══ */
+.membership-card {
+  aspect-ratio: 1.586 / 1;
+  background: linear-gradient(145deg, #1A1A1A 0%, #111111 50%, #0A0A0A 100%);
+  border: 1px solid rgba(201, 169, 78, 0.25);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(201, 169, 78, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.membership-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(201, 169, 78, 0.04),
+    transparent
+  );
+  animation: shimmer 4s ease-in-out infinite;
+}
+
+/* ═══ Section Divider ═══ */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 78, 0.3), transparent);
+  margin: 0 auto;
+}
+
+/* ═══ Dashboard Specific ═══ */
+.sidebar-link {
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: rgba(201, 169, 78, 0.05);
+  border-left-color: #C9A94E;
+  color: #C9A94E;
+}
+
+/* ═══ Table Styles ═══ */
+.elite-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.elite-table thead th {
+  background: rgba(201, 169, 78, 0.06);
+  color: #C9A94E;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(201, 169, 78, 0.15);
+}
+
+.elite-table tbody td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.875rem;
+}
+
+.elite-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.elite-table tbody tr:hover {
+  background: rgba(201, 169, 78, 0.03);
+}
+
+/* ═══ Form Inputs ═══ */
+.elite-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(201, 169, 78, 0.12);
+  color: #F5E6CC;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.elite-input:focus {
+  outline: none;
+  border-color: rgba(201, 169, 78, 0.4);
+  box-shadow: 0 0 20px rgba(201, 169, 78, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.elite-input::placeholder {
+  color: #666666;
+}
+
+/* ═══ Responsive Utilities ═══ */
+@media (max-width: 768px) {
+  .membership-card {
+    max-width: 340px;
+  }
+}
