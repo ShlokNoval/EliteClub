@@ -21,8 +21,8 @@ export const membershipPlans = [
     duration: '30 Days',
     mrpDays: 29,
     freeDays: 1,
-    price: 1700,
-    perDayValue: '₹57/day',
+    price: 3400,
+    perDayValue: '₹113/day',
     features: [
       '29 days liquor at MRP + VAT',
       '1 day unlimited liquor — FREE',
@@ -31,8 +31,8 @@ export const membershipPlans = [
       'Priority seating at events',
       'Member-only offers & deals',
     ],
-    popular: false,
-    color: 'gold',
+    popular: true,
+    color: 'burgundy',
   },
   {
     id: 'decka',
@@ -41,8 +41,8 @@ export const membershipPlans = [
     duration: '10 Days',
     mrpDays: 9,
     freeDays: 1,
-    price: 3400,
-    perDayValue: '₹340/day',
+    price: 1700,
+    perDayValue: '₹170/day',
     features: [
       '9 days liquor at MRP + VAT',
       '1 day unlimited liquor — FREE',
@@ -53,8 +53,8 @@ export const membershipPlans = [
       'Personal concierge support',
       'Complimentary appetizer on free day',
     ],
-    popular: true,
-    color: 'burgundy',
+    popular: false,
+    color: 'gold',
   },
 ];
 

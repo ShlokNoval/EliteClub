@@ -45,10 +45,16 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
 
       {showCard && (
         <motion.div
-          className="membership-card rounded-2xl p-6 sm:p-8"
+          className="membership-card rounded-2xl p-6 sm:p-8 cursor-pointer transition-shadow"
           initial={{ opacity: 0, rotateY: -90 }}
           animate={{ opacity: 1, rotateY: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ 
+            scale: 1.02, 
+            rotateX: 2, 
+            rotateY: -2,
+            boxShadow: "0 25px 50px -12px rgba(201,169,78,0.25)"
+          }}
           style={{ perspective: '1000px' }}
         >
           {/* Top Row */}

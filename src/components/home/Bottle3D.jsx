@@ -1,15 +1,15 @@
 import React, { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
 
-export default function Bottle3D(props) {
+export default function Bottle3D({ capRef, ...props }) {
   const group = useRef();
 
   return (
     <group ref={group} {...props} dispose={null}>
       
       {/* ═══ BOTTLE CAP (WAX SEAL / METALLIC) ═══ */}
-      <mesh position={[0, 3.2, 0]}>
-        <cylinderGeometry args={[0.35, 0.35, 0.8, 32]} />
+      {/* Y goes from 2.45 to 3.05 */}
+      <mesh ref={capRef} position={[0, 2.75, 0]}>
+        <cylinderGeometry args={[0.3, 0.3, 0.6, 32]} />
         <meshStandardMaterial 
           color="#6B1D2A" // Burgundy wax color
           metalness={0.5}
@@ -18,8 +18,9 @@ export default function Bottle3D(props) {
       </mesh>
 
       {/* ═══ BOTTLE LIP ═══ */}
-      <mesh position={[0, 2.7, 0]}>
-        <cylinderGeometry args={[0.32, 0.32, 0.2, 32]} />
+      {/* Y goes from 2.3 to 2.45 */}
+      <mesh position={[0, 2.375, 0]}>
+        <cylinderGeometry args={[0.28, 0.28, 0.15, 32]} />
         <meshPhysicalMaterial 
           transmission={1} 
           roughness={0.1} 
@@ -30,8 +31,9 @@ export default function Bottle3D(props) {
       </mesh>
 
       {/* ═══ BOTTLE NECK ═══ */}
-      <mesh position={[0, 2.0, 0]}>
-        <cylinderGeometry args={[0.25, 0.3, 1.4, 32]} />
+      {/* Y goes from 0.8 to 2.3 */}
+      <mesh position={[0, 1.55, 0]}>
+        <cylinderGeometry args={[0.22, 0.25, 1.5, 32]} />
         <meshPhysicalMaterial 
           transmission={1} 
           roughness={0.05} 
@@ -42,8 +44,9 @@ export default function Bottle3D(props) {
       </mesh>
 
       {/* ═══ BOTTLE SHOULDERS ═══ */}
-      <mesh position={[0, 0.8, 0]}>
-        <cylinderGeometry args={[0.3, 1.2, 1.0, 32]} />
+      {/* Y goes from 0 to 0.8 */}
+      <mesh position={[0, 0.4, 0]}>
+        <cylinderGeometry args={[0.25, 0.85, 0.8, 32]} />
         <meshPhysicalMaterial 
           transmission={1} 
           roughness={0.05} 
@@ -54,14 +57,15 @@ export default function Bottle3D(props) {
       </mesh>
 
       {/* ═══ BOTTLE BODY ═══ */}
-      <mesh position={[0, -1.2, 0]}>
-        <cylinderGeometry args={[1.2, 1.1, 3.0, 32]} />
+      {/* Y goes from -3.5 to 0 */}
+      <mesh position={[0, -1.75, 0]}>
+        <cylinderGeometry args={[0.85, 0.85, 3.5, 32]} />
         <meshPhysicalMaterial 
           transmission={1} 
           roughness={0.05} 
           metalness={0.1}
           ior={1.5} 
-          thickness={2} 
+          thickness={2.5} 
           color="#b08d3b" // Deep amber liquid color
           clearcoat={1}
           clearcoatRoughness={0.1}
@@ -69,9 +73,9 @@ export default function Bottle3D(props) {
       </mesh>
 
       {/* ═══ LABEL ═══ */}
-      <mesh position={[0, -1.2, 0]}>
-        {/* Slightly larger radius than body, only rendering the front half or wrapping completely */}
-        <cylinderGeometry args={[1.21, 1.11, 1.5, 32, 1, true, 0, Math.PI * 2]} />
+      <mesh position={[0, -1.5, 0]}>
+        {/* Slightly larger radius than body, rendering front half */}
+        <cylinderGeometry args={[0.86, 0.86, 1.5, 32, 1, true, -Math.PI / 2, Math.PI]} />
         <meshStandardMaterial 
           color="#0A0A0A" 
           metalness={0.8}
@@ -81,8 +85,8 @@ export default function Bottle3D(props) {
       </mesh>
       
       {/* ═══ LABEL EMBLEM (GOLD) ═══ */}
-      <mesh position={[0, -1.2, 1.17]} rotation={[0, 0, 0]}>
-        <cylinderGeometry args={[0.4, 0.4, 0.05, 32]} />
+      <mesh position={[0, -1.0, 0.85]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.2, 0.2, 0.05, 32]} />
         <meshStandardMaterial 
           color="#C9A94E" // Gold
           metalness={1}

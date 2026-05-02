@@ -24,8 +24,14 @@ export default function Button({ children, variant = 'gold', size = 'md', classN
       onClick={onClick}
       disabled={disabled}
       className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
-      whileTap={{ scale: disabled ? 1 : 0.98 }}
+      whileHover={disabled ? {} : { 
+        scale: 1.05, 
+        boxShadow: variant === 'gold' ? '0 0 25px rgba(201,169,78,0.5)' : 
+                   variant === 'burgundy' ? '0 0 25px rgba(107,29,42,0.5)' : 
+                   '0 0 15px rgba(255,255,255,0.1)',
+        y: -2
+      }}
+      whileTap={{ scale: disabled ? 1 : 0.95 }}
     >
       {Icon && <Icon size={size === 'sm' ? 16 : 18} />}
       {children}
