@@ -46,6 +46,33 @@ export default function Hero() {
           </motion.div>
         </motion.div>
 
+        {/* ── Left side floating accent ──────────────── */}
+        <motion.div
+          className="absolute left-8 xl:left-16 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col items-center gap-6"
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          style={{ opacity: contentOpacity }}
+        >
+          {/* Vertical line top */}
+          <div className="w-[1px] h-32 bg-gradient-to-b from-transparent to-gold/30" />
+          
+          {/* Badge */}
+          <motion.div 
+            className="glass-card rounded-full py-6 px-3 border border-gold/20 shadow-[0_0_30px_rgba(201,169,78,0.1)] flex flex-col items-center gap-4 backdrop-blur-md"
+            animate={{ y: [-8, 8, -8] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Crown size={18} className="text-gold" />
+            <div className="text-center" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+              <span className="text-xs font-bold tracking-[0.3em] text-champagne uppercase">Members Only</span>
+            </div>
+          </motion.div>
+          
+          {/* Vertical line bottom */}
+          <div className="w-[1px] h-32 bg-gradient-to-t from-transparent to-gold/30" />
+        </motion.div>
+
         {/* ── Foreground content ─────────────────── */}
         <motion.div
           className="relative z-30 flex flex-col items-center text-center px-6 max-w-5xl"

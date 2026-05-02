@@ -82,8 +82,8 @@ export default function AnimatedBottle() {
   const scaleM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0.55, 0.55, 0.25, 0.25, 0.25, 0]);
   const yM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0.3, 0.3, -1, 1, 0, -2]);
   
-  // Push the bottle to the far edges (x: 5 or -5) so it doesn't overlap text
-  const xM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [4.0, 4.0, 5, -5, 5, -5]);
+  // Bottle sweeps from the right side (Hero) into the center (Benefits runway) and then back out
+  const xM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [4.0, 4.0, 0, 0, 5, -5]);
   
   const rotateZM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0, 0, -1.57, 1.57, -1.57, 1.57]);
   const rotateXM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0, 0, Math.PI * 4, Math.PI * 8, Math.PI * 12, Math.PI * 16]);
