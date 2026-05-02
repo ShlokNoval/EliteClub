@@ -65,16 +65,39 @@ export default function Hero() {
             />
           </motion.div>
 
-          {/* Headline */}
           <motion.h2
             className="font-playfair text-5xl sm:text-7xl md:text-8xl font-bold leading-[1.08] mb-8"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 1, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="text-champagne">Where Every Pour</span>
+            <motion.span 
+              className="text-champagne inline-block"
+              animate={{ 
+                filter: [
+                  "drop-shadow(0px 0px 0px rgba(255,246,229,0))",
+                  "drop-shadow(0px 0px 15px rgba(255,246,229,0.4))",
+                  "drop-shadow(0px 0px 0px rgba(255,246,229,0))"
+                ]
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            >
+              Where Every Pour
+            </motion.span>
             <br />
-            <span className="text-gold-gradient">is a Privilege</span>
+            <motion.span 
+              className="text-gold-gradient inline-block pb-4 pr-2"
+              animate={{ 
+                filter: [
+                  "drop-shadow(0px 0px 5px rgba(201,169,78,0.2))",
+                  "drop-shadow(0px 0px 25px rgba(201,169,78,0.8))",
+                  "drop-shadow(0px 0px 5px rgba(201,169,78,0.2))"
+                ]
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            >
+              is a Privilege
+            </motion.span>
           </motion.h2>
 
           {/* Sub copy */}
