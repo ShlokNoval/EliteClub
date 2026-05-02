@@ -1,5 +1,6 @@
 import PageTransition from '../../components/layout/PageTransition';
 import BottleSequence from '../../components/home/BottleSequence';
+import BackgroundBubbles from '../../components/common/BackgroundBubbles';
 import Hero from '../../components/home/Hero';
 import AboutSection from '../../components/home/AboutSection';
 import MembershipPlans from '../../components/home/MembershipPlans';
@@ -13,6 +14,7 @@ export default function HomePage() {
   return (
     <PageTransition>
       <div className="bg-black-primary text-champagne relative min-h-screen">
+        <BackgroundBubbles />
         <BottleSequence />
         
         {/* DOM Content visible immediately */}
