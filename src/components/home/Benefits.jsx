@@ -94,9 +94,9 @@ export default function Benefits() {
           />
         </div>
 
-        {/* Split Runway Layout */}
+        {/* Balanced Grid Layout */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 gap-8 lg:gap-x-[28rem] xl:gap-x-[36rem] lg:gap-y-12 items-start justify-center max-w-7xl mx-auto"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10 items-stretch max-w-7xl mx-auto"
           variants={stagger}
           initial="hidden"
           whileInView="show"

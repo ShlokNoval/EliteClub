@@ -75,7 +75,7 @@ export default function Hero() {
 
         {/* ── Foreground content ─────────────────── */}
         <motion.div
-          className="relative z-30 flex flex-col items-center text-center px-6 max-w-5xl"
+          className="relative z-30 flex flex-col items-center text-center px-6 max-w-5xl pt-20 sm:pt-28"
           style={{ opacity: contentOpacity, y: contentY }}
         >
           {/* Logo */}
