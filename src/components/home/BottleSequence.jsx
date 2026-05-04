@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { Environment, Preload } from '@react-three/drei';
 import AnimatedBottle from './AnimatedBottle';
 
-export default function BottleSequence() {
+export default function BottleSequence({ membershipRef }) {
   return (
     <div className="fixed inset-0 pointer-events-none z-20">
       <Canvas 
@@ -16,9 +16,8 @@ export default function BottleSequence() {
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} />
         <spotLight position={[-10, 10, -10]} angle={0.15} penumbra={1} intensity={1} />
         
-        <Environment preset="studio" />
         <Suspense fallback={null}>
-          <AnimatedBottle />
+          <AnimatedBottle membershipRef={membershipRef} />
           {/* Environment maps provide realistic reflections on the glass */}
           <Environment preset="city" />
           <Preload all />

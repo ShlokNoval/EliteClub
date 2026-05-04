@@ -98,33 +98,17 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 1, ease: [0.22, 1, 0.36, 1] }}
           >
-            <motion.span 
-              className="text-champagne inline-block"
-              animate={{ 
-                filter: [
-                  "drop-shadow(0px 0px 0px rgba(255,246,229,0))",
-                  "drop-shadow(0px 0px 15px rgba(255,246,229,0.4))",
-                  "drop-shadow(0px 0px 0px rgba(255,246,229,0))"
-                ]
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            <span 
+              className="text-champagne inline-block drop-shadow-[0_0_15px_rgba(255,246,229,0.3)]"
             >
               Where Every Pour
-            </motion.span>
+            </span>
             <br />
-            <motion.span 
-              className="text-gold-gradient inline-block pb-4 pr-2"
-              animate={{ 
-                filter: [
-                  "drop-shadow(0px 0px 5px rgba(201,169,78,0.2))",
-                  "drop-shadow(0px 0px 25px rgba(201,169,78,0.8))",
-                  "drop-shadow(0px 0px 5px rgba(201,169,78,0.2))"
-                ]
-              }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            <span 
+              className="text-gold-gradient inline-block pb-4 pr-2 drop-shadow-[0_0_20px_rgba(201,169,78,0.6)]"
             >
               is a Privilege
-            </motion.span>
+            </span>
           </motion.h2>
 
           {/* Sub copy */}

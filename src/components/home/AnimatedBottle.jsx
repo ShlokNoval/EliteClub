@@ -1,12 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useScroll, useTransform, useSpring } from 'framer-motion';
+import { useScroll, useSpring } from 'framer-motion';
 import { Float } from '@react-three/drei';
 import Bottle3D from './Bottle3D';
 
 // CO2 Particle Burst Component
 function CO2Burst() {
   const groupRef = useRef();
+  const [active, setActive] = useState(true);
+  
   const particles = useRef(
     Array.from({ length: 50 }).map(() => ({
       x: (Math.random() - 0.5) * 0.1,
@@ -21,10 +23,13 @@ function CO2Burst() {
   );
 
   useFrame(() => {
-    if (!groupRef.current) return;
+    if (!active || !groupRef.current) return;
+    
+    let anyAlive = false;
     groupRef.current.children.forEach((mesh, i) => {
       const p = particles.current[i];
       if (p.life > 0) {
+        anyAlive = true;
         p.x += p.vx;
         p.y += p.vy;
         p.z += p.vz;
@@ -37,7 +42,13 @@ function CO2Burst() {
         mesh.visible = false;
       }
     });
+
+    if (!anyAlive) {
+      setActive(false);
+    }
   });
+
+  if (!active) return null;
 
   return (
     <group ref={groupRef}>
@@ -51,73 +62,142 @@ function CO2Burst() {
   );
 }
 
-export default function AnimatedBottle() {
+// Helpers
+function ei(t){return t<.5?2*t*t:-1+(4-2*t)*t;}
+function c01(v){return Math.max(0,Math.min(1,v));}
+function mr(v,a,b,c,d){return c+(d-c)*c01((v-a)/(b-a));}
+function lp(a,b,t){return a+(b-a)*t;}
+
+export default function AnimatedBottle({ membershipRef }) {
   const groupRef = useRef();
   const capRef = useRef();
   const [popped, setPopped] = useState(false);
+  const [benefitsEl, setBenefitsEl] = useState(null);
 
-  // 1. Get Scroll Progress
-  const { scrollYProgress } = useScroll();
-
-  // Trigger pop when scroll passes 0.02
   useEffect(() => {
-    const unsubscribe = scrollYProgress.on("change", (latest) => {
-      if (latest > 0.02 && !popped) {
+    setBenefitsEl(document.getElementById('benefits'));
+  }, []);
+
+  // 1. Hero Scroll (0 to 200vh)
+  const { scrollY } = useScroll();
+  const heroProgress = useSpring(0, { stiffness: 50, damping: 20 });
+  
+  useEffect(() => {
+    return scrollY.on("change", (v) => {
+      const max = window.innerHeight * 2;
+      heroProgress.set(Math.min(Math.max(v / max, 0), 1));
+      
+      if (v > 20 && !popped) {
         setPopped(true);
       }
     });
-    return () => unsubscribe();
-  }, [scrollYProgress, popped]);
+  }, [scrollY, popped, heroProgress]);
 
-  // 2. Apply Inertia/Damping to the Scroll! (Apple-like feel)
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 50,
-    damping: 20,
-    mass: 1,
-    restDelta: 0.001
+  // 2. Membership Scroll
+  const { scrollYProgress: memScrollRaw } = useScroll({
+    target: membershipRef,
+    offset: ['start start', 'end end'],
   });
+  const smoothMem = useSpring(memScrollRaw, { stiffness: 55, damping: 22, mass: 1, restDelta: 0.001 });
 
-  // 3. Map values using the SMOOTHED progress
-  // Wait until 0.2 (leaving 200vh Hero section) before tilting and rolling away
-  const scaleM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0.55, 0.55, 0.25, 0.25, 0.25, 0]);
-  const yM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0.3, 0.3, -1, 1, 0, -2]);
-  
-  // Bottle sweeps from the right side (Hero) into the center (Benefits runway) and then back out
-  const xM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [4.0, 4.0, 0, 0, 5, -5]);
-  
-  const rotateZM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0, 0, -1.57, 1.57, -1.57, 1.57]);
-  const rotateXM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0, 0, Math.PI * 4, Math.PI * 8, Math.PI * 12, Math.PI * 16]);
-  const rotateYM = useTransform(smoothProgress, [0, 0.2, 0.3, 0.6, 0.8, 1], [0, 0, -0.2, 0.2, -0.2, 0.2]);
-
-  // Cap Fly-Off Physics (Happens between 0.02 and 0.1)
-  const capY = useTransform(smoothProgress, [0, 0.02, 0.1], [2.75, 2.75, 10.0]);
-  const capRX = useTransform(smoothProgress, [0, 0.02, 0.1], [0, 0, Math.PI * 4]);
-  const capRZ = useTransform(smoothProgress, [0, 0.02, 0.1], [0, 0, Math.PI * 2]);
+  // 3. Benefits Scroll
+  const { scrollYProgress: benScrollRaw } = useScroll({
+    target: benefitsEl ? { current: benefitsEl } : null,
+    offset: ['start end', 'end start'],
+  });
+  const smoothBen = useSpring(benScrollRaw, { stiffness: 50, damping: 20, mass: 1, restDelta: 0.001 });
 
   useFrame(() => {
-    if (groupRef.current) {
-      const s = scaleM.get();
-      groupRef.current.scale.set(s, s, s);
-      groupRef.current.position.set(xM.get(), yM.get(), 0);
-      groupRef.current.rotation.set(rotateXM.get(), rotateYM.get(), rotateZM.get());
-    }
-    if (capRef.current) {
-      capRef.current.position.y = capY.get();
-      capRef.current.rotation.x = capRX.get();
-      capRef.current.rotation.z = capRZ.get();
+    if (!groupRef.current) return;
+    
+    const h = heroProgress.get();
+    const m = smoothMem.get();
+    const b = smoothBen.get();
+
+    let s = 0;
+    let x = 0;
+    let y = 0;
+    let rx = 0;
+    let ry = 0;
+    let rz = 0;
+    let visible = true;
+
+    // Default Cap State
+    let cy = 2.75;
+    let crx = 0;
+    let crz = 0;
+    let cVis = true;
+
+    if (m > 0.001 && m < 0.999) {
+      // ── In MembershipReveal ──
+      cVis = false; // Cap is already gone
+      y = -1.0;
+      x = 0;
+      rx = Math.PI * 4; // upright from the previous roll
       
-      // Hide cap completely once it flies off so it doesn't stick around horizontally
-      if (capY.get() > 5.0) {
-        capRef.current.visible = false;
+      s = m < 0.24 ? 0.55 : lp(0.55, 0, ei(mr(m, 0.24, 0.42, 0, 1)));
+      visible = m < 0.44;
+      
+    } else if (b > 0.001 && b < 0.999) {
+      // ── In Benefits ──
+      cVis = false;
+      y = 0.0; 
+      
+      if (b < 0.2) {
+        // Roll in from right
+        const bt = mr(b, 0, 0.2, 0, 1);
+        s = lp(0, 0.25, ei(bt));
+        x = lp(5, 0, ei(bt));
+        rx = lp(Math.PI * 4, Math.PI * 8, ei(bt));
+      } else if (b < 0.8) {
+        // Stay in center
+        s = 0.25;
+        x = 0;
+        rx = Math.PI * 8;
+        ry = lp(-0.2, 0.2, (b - 0.2) / 0.6); // slight rotation side-to-side
       } else {
-        capRef.current.visible = true;
+        // Roll out to left
+        const bt = mr(b, 0.8, 1.0, 0, 1);
+        s = lp(0.25, 0, ei(bt));
+        x = lp(0, -5, ei(bt));
+        rx = lp(Math.PI * 8, Math.PI * 12, ei(bt));
       }
+    } else if (m <= 0.001) {
+      // ── In Hero or above Membership ──
+      s = 0.55;
+      y = 0.3 - (h * 1.3); // 0.3 down to -1.0
+      x = lp(4.0, 0, ei(h));
+      rx = lp(0, Math.PI * 4, ei(h)); 
+      
+      // Cap fly-off physics
+      if (h > 0.05) {
+         const ct = c01((h - 0.05) / 0.15);
+         cy = lp(2.75, 10.0, ct);
+         crx = lp(0, Math.PI * 4, ct);
+         crz = lp(0, Math.PI * 2, ct);
+         cVis = ct < 0.99;
+      }
+    } else {
+       // Between Membership and Benefits (e.g. AboutSection)
+       visible = false;
+       cVis = false;
+    }
+
+    groupRef.current.scale.set(s, s, s);
+    groupRef.current.position.set(x, y, 0);
+    groupRef.current.rotation.set(rx, ry, rz);
+    groupRef.current.visible = visible;
+
+    if (capRef.current) {
+      capRef.current.position.y = cy;
+      capRef.current.rotation.x = crx;
+      capRef.current.rotation.z = crz;
+      capRef.current.visible = cVis;
     }
   });
 
   return (
     <group>
-      {/* The main animated bottle group */}
       <group ref={groupRef}>
         <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
           <Bottle3D capRef={capRef} />
