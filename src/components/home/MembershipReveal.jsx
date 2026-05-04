@@ -198,7 +198,7 @@ export default function MembershipReveal() {
       className="relative bg-black-primary"
       style={{ height: '280vh' }}
     >
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
+      <div className="sticky top-0 h-screen w-full overflow-hidden pointer-events-none">
 
         {/* Glows */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_50%_50%,_rgba(107,29,42,0.16)_0%,_transparent_70%)] pointer-events-none z-0"/>
@@ -245,7 +245,7 @@ export default function MembershipReveal() {
           {/* Cards — top-aligned so the 'Most Popular' banner is never clipped */}
           <motion.div
             style={{ opacity: cardsOpacity }}
-            className="absolute inset-0 overflow-y-auto"
+            className="absolute inset-0 overflow-hidden pointer-events-auto"
           >
             <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-4">
               <div
