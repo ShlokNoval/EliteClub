@@ -1,87 +1,239 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ScanLine, CheckCircle2, XCircle, AlertTriangle, Shield, Lock, User } from 'lucide-react';
+import { ScanLine, CheckCircle2, XCircle, AlertTriangle, Shield, Lock, User, Camera, Hash } from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
-import { mockUsers, membershipPlans, currentHotel } from '../../data/mockData';
-import { maskEmail, maskPhone, formatDate } from '../../utils/helpers';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../components/common/Toast';
+import { supabase } from '../../lib/supabase';
+import { formatDate } from '../../utils/helpers';
 
-const scanResults = {
-  valid: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20', title: 'Valid Membership', desc: 'This member has an active membership.' },
-  expired: { icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/20', title: 'Membership Expired', desc: 'This membership has expired.' },
-  invalid: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20', title: 'Invalid QR Code', desc: 'This QR code is not recognized.' },
-  unauthorized: { icon: Lock, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20', title: 'Unauthorized Access', desc: 'Your venue is not verified to view member details.' },
+const resultStyles = {
+  valid: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20' },
+  expired: { icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/20' },
+  invalid: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20' },
+  blocked: { icon: Lock, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20' },
+  not_found: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20' },
+  check_in: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20' },
+  check_out: { icon: CheckCircle2, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
 };
 
 export default function HotelScanner() {
+  const { hotel } = useAuth();
+  const toast = useToast();
+  const [manualId, setManualId] = useState('');
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(null);
-  const [resultType, setResultType] = useState(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const scannerRef = useRef(null);
+  const html5QrRef = useRef(null);
 
-  const isVerified = currentHotel.status === 'verified';
+  // Clean up camera on unmount
+  useEffect(() => {
+    return () => { stopCamera(); };
+  }, []);
 
-  const simulateScan = (type) => {
-    setScanning(true);
-    setResult(null);
-    setTimeout(() => {
-      setScanning(false);
-      setResultType(type);
-      if (type === 'valid') {
-        setResult(mockUsers.find(u => u.status === 'active'));
-      } else if (type === 'expired') {
-        setResult(mockUsers.find(u => u.status === 'expired' || u.status === 'inactive'));
-      } else {
-        setResult(null);
-      }
-    }, 2000);
+  const stopCamera = () => {
+    if (html5QrRef.current) {
+      html5QrRef.current.stop().catch(() => {});
+      html5QrRef.current = null;
+    }
+    setCameraActive(false);
   };
 
-  const getPlan = (planId) => membershipPlans.find(p => p.id === planId);
+  const startCamera = async () => {
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const scanner = new Html5Qrcode('qr-reader');
+      html5QrRef.current = scanner;
+      setCameraActive(true);
+
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+          stopCamera();
+          processScan(decodedText.trim());
+        },
+        () => {} // ignore errors during scanning
+      );
+    } catch (err) {
+      toast.error('Camera access denied or not available.');
+      setCameraActive(false);
+    }
+  };
+
+  const handleManualScan = () => {
+    if (!manualId.trim()) return;
+    processScan(manualId.trim().toUpperCase());
+    setManualId('');
+  };
+
+  const processScan = async (cardId) => {
+    setScanning(true);
+    setResult(null);
+
+    try {
+      // 1. Look up card
+      const { data: card } = await supabase.from('qr_cards').select('*, profiles:assigned_to(id, full_name, email, phone, plan, status, member_id, join_date, expiry_date)').eq('card_id', cardId).single();
+
+      if (!card) {
+        await logScan(cardId, null, 'check_in', 'not_found');
+        setResult({ type: 'not_found', title: 'Card Not Found', desc: `QR code "${cardId}" is not in the system.` });
+        setScanning(false);
+        return;
+      }
+
+      if (!card.profiles) {
+        await logScan(cardId, null, 'check_in', 'invalid');
+        setResult({ type: 'invalid', title: 'Card Not Assigned', desc: `Card ${cardId} exists but is not assigned to any member.` });
+        setScanning(false);
+        return;
+      }
+
+      const member = card.profiles;
+
+      // 2. Check member status
+      if (member.status !== 'active') {
+        await logScan(cardId, member.id, 'check_in', 'expired');
+        setResult({ type: 'expired', title: 'Membership Inactive', desc: `${member.full_name}'s membership is ${member.status}.`, member });
+        setScanning(false);
+        return;
+      }
+
+      // 3. Check for existing visits today
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+
+      const { data: closedToday } = await supabase.from('visits')
+        .select('id')
+        .eq('member_id', member.id)
+        .eq('status', 'closed')
+        .gte('check_in', todayStart.toISOString());
+
+      if (closedToday && closedToday.length > 0) {
+        await logScan(cardId, member.id, 'check_in', 'blocked');
+        setResult({ type: 'blocked', title: 'Already Visited Today', desc: `${member.full_name} has already completed a visit today. Cannot check in again.`, member });
+        setScanning(false);
+        return;
+      }
+
+      // 4. Check for open visit (this would be check-out)
+      const { data: openVisits } = await supabase.from('visits')
+        .select('id, check_in, hotel_id')
+        .eq('member_id', member.id)
+        .eq('status', 'open');
+
+      if (openVisits && openVisits.length > 0) {
+        const openVisit = openVisits[0];
+        if (openVisit.hotel_id === hotel.id) {
+          // Check-out at same hotel
+          await supabase.from('visits')
+            .update({ check_out: new Date().toISOString(), status: 'closed' })
+            .eq('id', openVisit.id);
+          await logScan(cardId, member.id, 'check_out', 'valid');
+          setResult({ type: 'check_out', title: '✓ Checked Out', desc: `${member.full_name} has been checked out. Please proceed to upload the bill.`, member, visitId: openVisit.id });
+        } else {
+          // Open visit at different hotel
+          setResult({ type: 'blocked', title: 'Visit Open Elsewhere', desc: `${member.full_name} has an open visit at another venue. They must check out there first.`, member });
+        }
+        setScanning(false);
+        return;
+      }
+
+      // 5. All clear — Check-in
+      const { data: newVisit } = await supabase.from('visits').insert({
+        member_id: member.id,
+        hotel_id: hotel.id,
+        status: 'open',
+      }).select().single();
+
+      await logScan(cardId, member.id, 'check_in', 'valid');
+
+      // Update hotel scan count
+      await supabase.from('hotels').update({ scan_count: (hotel.scan_count || 0) + 1 }).eq('id', hotel.id);
+
+      setResult({ type: 'check_in', title: '✓ Checked In', desc: `${member.full_name} has been checked in successfully.`, member, visitId: newVisit?.id });
+    } catch (err) {
+      console.error(err);
+      setResult({ type: 'invalid', title: 'Error', desc: err.message });
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const logScan = async (cardId, memberId, scanType, resultType) => {
+    await supabase.from('scans').insert({
+      card_id: cardId,
+      hotel_id: hotel?.id,
+      member_id: memberId,
+      scan_type: scanType,
+      result: resultType,
+    });
+  };
+
+  const style = result ? (resultStyles[result.type] || resultStyles.invalid) : null;
+  const ResultIcon = style?.icon || XCircle;
 
   return (
     <PageTransition>
       <div className="mb-8">
         <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">QR <span className="text-gold-gradient">Scanner</span></h1>
-        <p className="text-smoke">Scan member QR codes to verify membership status.</p>
+        <p className="text-smoke">Scan member QR codes to check in / check out.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Scanner */}
         <GlassCard hover={false}>
-          <div className="relative aspect-square max-w-sm mx-auto rounded-2xl bg-black-deep border border-gold/10 overflow-hidden flex items-center justify-center">
-            {scanning ? (
-              <motion.div className="absolute inset-0 flex flex-col items-center justify-center"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <motion.div className="absolute left-4 right-4 h-0.5 bg-gold/60"
-                  animate={{ top: ['15%', '85%', '15%'] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                />
-                <ScanLine size={64} className="text-gold/30 mb-4"/>
-                <p className="text-gold text-sm animate-pulse">Scanning...</p>
-              </motion.div>
-            ) : (
-              <div className="text-center p-8">
-                <ScanLine size={64} className="text-gold/20 mx-auto mb-4"/>
-                <p className="text-smoke text-sm mb-2">Position QR code in frame</p>
-                <p className="text-ash text-xs">Camera preview area</p>
+          {/* Camera Area */}
+          <div className="relative aspect-square max-w-sm mx-auto rounded-2xl bg-black-deep border border-gold/10 overflow-hidden flex items-center justify-center mb-6">
+            <div id="qr-reader" className="w-full h-full" />
+            {!cameraActive && !scanning && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+                <ScanLine size={64} className="text-gold/20 mb-4" />
+                <p className="text-smoke text-sm mb-2">Use camera or enter ID manually</p>
+              </div>
+            )}
+            {scanning && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <motion.div className="absolute left-4 right-4 h-0.5 bg-gold/60" animate={{ top: ['15%', '85%', '15%'] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} />
+                <ScanLine size={64} className="text-gold/30 mb-4" />
+                <p className="text-gold text-sm animate-pulse">Processing...</p>
               </div>
             )}
             {/* Corner guides */}
-            <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-gold/40 rounded-tl-lg"/>
-            <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-gold/40 rounded-tr-lg"/>
-            <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-gold/40 rounded-bl-lg"/>
-            <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-gold/40 rounded-br-lg"/>
+            <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-gold/40 rounded-tl-lg" />
+            <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-gold/40 rounded-tr-lg" />
+            <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-gold/40 rounded-bl-lg" />
+            <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-gold/40 rounded-br-lg" />
           </div>
 
-          <div className="mt-6 space-y-3">
-            <p className="text-xs text-gold font-semibold uppercase tracking-wider mb-3">Simulate Scan:</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="gold" size="sm" onClick={() => simulateScan('valid')} disabled={scanning}>Valid QR</Button>
-              <Button variant="ghost" size="sm" onClick={() => simulateScan('expired')} disabled={scanning}>Expired QR</Button>
-              <Button variant="danger" size="sm" onClick={() => simulateScan('invalid')} disabled={scanning}>Invalid QR</Button>
-              <Button variant="ghost" size="sm" onClick={() => { setResultType('unauthorized'); setResult(null); setScanning(false); }} disabled={scanning}>Unauthorized</Button>
+          {/* Camera toggle */}
+          <div className="flex gap-3 mb-6">
+            {!cameraActive ? (
+              <Button variant="gold" size="sm" icon={Camera} className="flex-1" onClick={startCamera}>Start Camera</Button>
+            ) : (
+              <Button variant="danger" size="sm" className="flex-1" onClick={stopCamera}>Stop Camera</Button>
+            )}
+          </div>
+
+          {/* Manual Entry */}
+          <div className="border-t border-white/5 pt-4">
+            <p className="text-xs text-gold font-semibold uppercase tracking-wider mb-3">Or enter Card ID manually:</p>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-muted" />
+                <input
+                  type="text"
+                  value={manualId}
+                  onChange={e => setManualId(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleManualScan()}
+                  placeholder="e.g. K002098"
+                  className="w-full elite-input rounded-xl pl-9 pr-4 py-2.5 text-sm"
+                />
+              </div>
+              <Button variant="gold" size="sm" onClick={handleManualScan} disabled={scanning || !manualId.trim()}>Verify</Button>
             </div>
           </div>
         </GlassCard>
@@ -89,42 +241,32 @@ export default function HotelScanner() {
         {/* Result */}
         <div>
           <AnimatePresence mode="wait">
-            {resultType && !scanning && (
-              <motion.div key={resultType} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                <GlassCard hover={false} className={`border ${scanResults[resultType].border}`}>
+            {result && !scanning && (
+              <motion.div key={result.type + Date.now()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <GlassCard hover={false} className={`border ${style.border}`}>
                   <div className="text-center mb-6">
-                    <div className={`w-16 h-16 rounded-full ${scanResults[resultType].bg} flex items-center justify-center mx-auto mb-3`}>
-                      {(() => { const I = scanResults[resultType].icon; return <I size={32} className={scanResults[resultType].color}/>; })()}
+                    <div className={`w-16 h-16 rounded-full ${style.bg} flex items-center justify-center mx-auto mb-3`}>
+                      <ResultIcon size={32} className={style.color} />
                     </div>
-                    <h3 className={`font-playfair text-xl font-semibold ${scanResults[resultType].color}`}>{scanResults[resultType].title}</h3>
-                    <p className="text-smoke text-sm mt-1">{scanResults[resultType].desc}</p>
+                    <h3 className={`font-playfair text-xl font-semibold ${style.color}`}>{result.title}</h3>
+                    <p className="text-smoke text-sm mt-1">{result.desc}</p>
                   </div>
 
-                  {result && resultType !== 'unauthorized' && isVerified && (
+                  {result.member && (
                     <div className="border-t border-white/5 pt-4 space-y-3 text-sm">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center">
-                          <User size={20} className="text-gold"/>
+                          <User size={20} className="text-gold" />
                         </div>
                         <div>
-                          <p className="text-champagne font-semibold">{result.name}</p>
-                          <p className="text-ash text-xs">{result.id}</p>
+                          <p className="text-champagne font-semibold">{result.member.full_name}</p>
+                          <p className="text-ash text-xs">{result.member.member_id}</p>
                         </div>
-                        <Badge status={result.status} className="ml-auto"/>
+                        <Badge status={result.member.status} className="ml-auto" />
                       </div>
-                      <div className="flex justify-between"><span className="text-smoke">Email</span><span className="text-champagne">{isVerified ? result.email : maskEmail(result.email)}</span></div>
-                      <div className="flex justify-between"><span className="text-smoke">Phone</span><span className="text-champagne">{isVerified ? result.phone : maskPhone(result.phone)}</span></div>
-                      <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold">{getPlan(result.plan)?.name}</span></div>
-                      <div className="flex justify-between"><span className="text-smoke">Joined</span><span className="text-champagne">{formatDate(result.joinDate)}</span></div>
-                      <div className="flex justify-between"><span className="text-smoke">Expires</span><span className="text-champagne">{formatDate(result.expiryDate)}</span></div>
-                    </div>
-                  )}
-
-                  {result && !isVerified && resultType !== 'unauthorized' && (
-                    <div className="border-t border-white/5 pt-4 text-center">
-                      <Lock size={24} className="text-red-400 mx-auto mb-2"/>
-                      <p className="text-red-400 text-sm font-medium">Venue Not Verified</p>
-                      <p className="text-smoke text-xs mt-1">Complete verification to view member details.</p>
+                      <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold capitalize">{result.member.plan}</span></div>
+                      <div className="flex justify-between"><span className="text-smoke">Joined</span><span className="text-champagne">{formatDate(result.member.join_date)}</span></div>
+                      <div className="flex justify-between"><span className="text-smoke">Expires</span><span className="text-champagne">{formatDate(result.member.expiry_date)}</span></div>
                     </div>
                   )}
                 </GlassCard>
@@ -132,11 +274,12 @@ export default function HotelScanner() {
             )}
           </AnimatePresence>
 
-          {!resultType && !scanning && (
+          {!result && !scanning && (
             <GlassCard hover={false} className="flex flex-col items-center justify-center py-16 text-center">
-              <Shield size={48} className="text-gold/20 mb-4"/>
+              <Shield size={48} className="text-gold/20 mb-4" />
               <h3 className="text-champagne font-semibold mb-2">Ready to Scan</h3>
-              <p className="text-smoke text-sm">Use the scanner or simulate a scan to verify membership.</p>
+              <p className="text-smoke text-sm">Use the camera or enter a Card ID to verify membership.</p>
+              <p className="text-ash text-xs mt-4">Scan 1 = Check In • Scan 2 = Check Out</p>
             </GlassCard>
           )}
         </div>

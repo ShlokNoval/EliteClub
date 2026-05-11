@@ -2,30 +2,41 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Building2, CreditCard, Menu, X, Crown, LogOut,
-  ScanLine, ClipboardList, ChevronLeft
+  ScanLine, ClipboardList, ChevronLeft, Receipt, BarChart3, FileText, MapPin, MessageSquare
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 
 const adminLinks = [
   { to: '/admin', icon: LayoutDashboard, label: 'Overview', end: true },
   { to: '/admin/users', icon: Users, label: 'Users' },
   { to: '/admin/hotels', icon: Building2, label: 'Hotels' },
-  { to: '/admin/cards', icon: CreditCard, label: 'Card Generator' },
+  { to: '/admin/cards', icon: CreditCard, label: 'QR Cards' },
+  { to: '/admin/bills', icon: Receipt, label: 'Bills' },
+  { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
+  { to: '/admin/messages', icon: MessageSquare, label: 'Messages' },
 ];
 
 const hotelLinks = [
   { to: '/hotel', icon: LayoutDashboard, label: 'Overview', end: true },
   { to: '/hotel/scanner', icon: ScanLine, label: 'QR Scanner' },
-  { to: '/hotel/scans', icon: ClipboardList, label: 'Recent Scans' },
+  { to: '/hotel/scans', icon: ClipboardList, label: 'Scan History' },
+  { to: '/hotel/bills', icon: Receipt, label: 'Upload Bill' },
+  { to: '/hotel/visits', icon: MapPin, label: 'Visits' },
 ];
 
 export default function Sidebar({ type = 'admin' }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { logout, profile } = useAuth();
   const location = useLocation();
   const links = type === 'admin' ? adminLinks : hotelLinks;
   const title = type === 'admin' ? 'Admin Panel' : 'Hotel Portal';
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   const SidebarContent = ({ mobile = false }) => (
     <div className="flex flex-col h-full">
@@ -35,7 +46,7 @@ export default function Sidebar({ type = 'admin' }) {
         {(!collapsed || mobile) && (
           <div>
             <p className="text-gold font-playfair font-bold text-sm">{title}</p>
-            <p className="text-ash text-xs">The Elite Club</p>
+            <p className="text-ash text-xs">{profile?.full_name || 'The Elite Club'}</p>
           </div>
         )}
       </div>
@@ -67,19 +78,19 @@ export default function Sidebar({ type = 'admin' }) {
         {!mobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm text-smoke hover:text-champagne hover:bg-white/3 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm text-smoke hover:text-champagne hover:bg-white/3 transition-all cursor-pointer"
           >
             <ChevronLeft size={18} className={`transition-transform ${collapsed ? 'rotate-180' : ''}`} />
             {!collapsed && <span>Collapse</span>}
           </button>
         )}
-        <NavLink
-          to="/"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-smoke hover:text-red-400 transition-all mt-1"
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-smoke hover:text-red-400 transition-all mt-1 cursor-pointer"
         >
           <LogOut size={18} />
-          {(!collapsed || mobile) && <span>Exit</span>}
-        </NavLink>
+          {(!collapsed || mobile) && <span>Logout</span>}
+        </button>
       </div>
     </div>
   );
@@ -101,7 +112,7 @@ export default function Sidebar({ type = 'admin' }) {
       {/* Mobile Toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 glass rounded-xl text-gold"
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 glass rounded-xl text-gold cursor-pointer"
       >
         <Menu size={20} />
       </button>
@@ -125,7 +136,7 @@ export default function Sidebar({ type = 'admin' }) {
             >
               <button
                 onClick={() => setMobileOpen(false)}
-                className="absolute top-4 right-4 p-2 text-smoke hover:text-champagne"
+                className="absolute top-4 right-4 p-2 text-smoke hover:text-champagne cursor-pointer"
               >
                 <X size={20} />
               </button>

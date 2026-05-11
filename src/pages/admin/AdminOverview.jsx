@@ -1,19 +1,11 @@
+import { useState, useEffect } from 'react';
+import { Users, Crown, Building2, IndianRupee, ScanLine, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Users, Crown, Building2, IndianRupee, ScanLine, TrendingUp, UserPlus, AlertTriangle, XCircle, ShieldAlert } from 'lucide-react';
-import * as Icons from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
-import Badge from '../../components/common/Badge';
-import { adminStats, recentActivity, revenueChartData, scansChartData } from '../../data/mockData';
+import { supabase } from '../../lib/supabase';
 import { formatCurrency } from '../../utils/helpers';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-
-const statCards = [
-  { icon: Users, label: 'Total Users', value: adminStats.totalUsers, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-  { icon: Crown, label: 'Active Members', value: adminStats.activeMembers, color: 'text-green-400', bg: 'bg-green-400/10' },
-  { icon: Building2, label: 'Verified Hotels', value: `${adminStats.verifiedHotels}/${adminStats.totalHotels}`, color: 'text-gold', bg: 'bg-gold/10' },
-  { icon: IndianRupee, label: 'Monthly Revenue', value: formatCurrency(adminStats.monthlyRevenue), color: 'text-gold-light', bg: 'bg-gold-light/10' },
-];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -28,9 +20,61 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function AdminOverview() {
+  const [stats, setStats] = useState({ totalUsers: 0, activeMembers: 0, totalHotels: 0, verifiedHotels: 0, totalScans: 0, totalRevenue: 0 });
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [profilesRes, hotelsRes, scansRes, billsRes] = await Promise.all([
+        supabase.from('profiles').select('id, role, status').eq('role', 'member'),
+        supabase.from('hotels').select('id, status'),
+        supabase.from('scans').select('id, created_at, result, card_id, scan_type').order('created_at', { ascending: false }).limit(50),
+        supabase.from('bills').select('food_bev_cost, liquor_cost_billed, created_at'),
+      ]);
+
+      const members = profilesRes.data || [];
+      const hotels = hotelsRes.data || [];
+      const scans = scansRes.data || [];
+      const bills = billsRes.data || [];
+
+      const totalRevenue = bills.reduce((sum, b) => sum + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0);
+
+      setStats({
+        totalUsers: members.length,
+        activeMembers: members.filter(m => m.status === 'active').length,
+        totalHotels: hotels.length,
+        verifiedHotels: hotels.filter(h => h.status === 'verified').length,
+        totalScans: scans.length,
+        totalRevenue,
+      });
+
+      // Build recent activity from scans
+      setActivity(scans.slice(0, 8).map(s => ({
+        id: s.id,
+        message: `QR ${s.card_id} scanned — ${s.result} (${s.scan_type.replace('_', ' ')})`,
+        time: new Date(s.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+      })));
+    } catch (err) {
+      console.error('Error loading admin data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statCards = [
+    { icon: Users, label: 'Total Members', value: stats.totalUsers, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { icon: Crown, label: 'Active Members', value: stats.activeMembers, color: 'text-green-400', bg: 'bg-green-400/10' },
+    { icon: Building2, label: 'Hotels', value: `${stats.verifiedHotels}/${stats.totalHotels}`, color: 'text-gold', bg: 'bg-gold/10' },
+    { icon: IndianRupee, label: 'Total Revenue', value: formatCurrency(stats.totalRevenue), color: 'text-gold-light', bg: 'bg-gold-light/10' },
+  ];
+
   return (
     <PageTransition>
-      {/* Header */}
       <div className="mb-8">
         <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">
           Admin <span className="text-gold-gradient">Overview</span>
@@ -45,7 +89,9 @@ export default function AdminOverview() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-smoke text-xs font-medium uppercase tracking-wider">{stat.label}</p>
-                <p className={`text-2xl font-bold mt-2 ${stat.color}`}>{stat.value}</p>
+                <p className={`text-2xl font-bold mt-2 ${stat.color}`}>
+                  {loading ? '...' : stat.value}
+                </p>
               </div>
               <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center`}>
                 <stat.icon size={22} className={stat.color} />
@@ -55,78 +101,37 @@ export default function AdminOverview() {
         ))}
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Revenue Chart */}
-        <GlassCard hover={false}>
-          <h3 className="text-champagne font-semibold mb-6 flex items-center gap-2">
-            <TrendingUp size={18} className="text-gold" />
-            Revenue Trend
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueChartData}>
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#C9A94E" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#C9A94E" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="month" stroke="#666" fontSize={12} />
-                <YAxis stroke="#666" fontSize={12} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="revenue" stroke="#C9A94E" fill="url(#revenueGradient)" strokeWidth={2} name="Revenue" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
-
-        {/* Scans Chart */}
-        <GlassCard hover={false}>
-          <h3 className="text-champagne font-semibold mb-6 flex items-center gap-2">
-            <ScanLine size={18} className="text-gold" />
-            Weekly Scans
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={scansChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="day" stroke="#666" fontSize={12} />
-                <YAxis stroke="#666" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="scans" fill="#6B1D2A" radius={[6, 6, 0, 0]} name="Scans" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
-      </div>
-
       {/* Recent Activity */}
       <GlassCard hover={false}>
-        <h3 className="text-champagne font-semibold mb-6">Recent Activity</h3>
-        <div className="space-y-4">
-          {recentActivity.map((activity, i) => {
-            const Icon = Icons[activity.icon] || Icons.Activity;
-            return (
+        <h3 className="text-champagne font-semibold mb-6 flex items-center gap-2">
+          <ScanLine size={18} className="text-gold" />
+          Recent Scan Activity
+        </h3>
+        {loading ? (
+          <p className="text-smoke text-sm py-8 text-center">Loading...</p>
+        ) : activity.length === 0 ? (
+          <p className="text-smoke text-sm py-8 text-center">No activity yet. Scans will appear here.</p>
+        ) : (
+          <div className="space-y-4">
+            {activity.map((item, i) => (
               <motion.div
-                key={activity.id}
+                key={item.id}
                 className="flex items-start gap-4 pb-4 border-b border-white/5 last:border-0 last:pb-0"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
                 <div className="w-10 h-10 rounded-lg bg-gold/8 border border-gold/10 flex items-center justify-center shrink-0">
-                  <Icon size={18} className="text-gold" />
+                  <ScanLine size={18} className="text-gold" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-champagne-dark text-sm">{activity.message}</p>
-                  <p className="text-ash text-xs mt-1">{activity.time}</p>
+                  <p className="text-champagne-dark text-sm">{item.message}</p>
+                  <p className="text-ash text-xs mt-1">{item.time}</p>
                 </div>
               </motion.div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </GlassCard>
     </PageTransition>
   );

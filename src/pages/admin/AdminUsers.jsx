@@ -1,32 +1,128 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Edit3, RefreshCw, Eye, UserPlus } from 'lucide-react';
+import { Search, Filter, Edit3, UserPlus, Eye, EyeOff, CreditCard, Lock } from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import { mockUsers, membershipPlans } from '../../data/mockData';
-import { formatDate, formatCurrency, maskPhone, maskEmail } from '../../utils/helpers';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { useToast } from '../../components/common/Toast';
+import { formatDate, maskPhone, maskEmail } from '../../utils/helpers';
 
 export default function AdminUsers() {
+  const [users, setUsers] = useState([]);
+  const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [viewMode, setViewMode] = useState('masked');
+  const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState(false);
-  const [viewMode, setViewMode] = useState('masked'); // 'masked' or 'full'
+  const [addModal, setAddModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
-  const filtered = mockUsers.filter((u) => {
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.id.toLowerCase().includes(search.toLowerCase());
+  // Add user form
+  const [newUser, setNewUser] = useState({ full_name: '', email: '', phone: '', plan: 'dainik', card_id: '', password: '' });
+  // Edit user form
+  const [editForm, setEditForm] = useState({});
+
+  useEffect(() => { fetchData(); }, []);
+
+  const fetchData = async () => {
+    try {
+      const [usersRes, cardsRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('role', 'member').order('created_at', { ascending: false }),
+        supabase.from('qr_cards').select('card_id, status').eq('status', 'available').order('card_id').limit(100),
+      ]);
+      setUsers(usersRes.data || []);
+      setCards(cardsRes.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = users.filter((u) => {
+    const matchSearch = u.full_name.toLowerCase().includes(search.toLowerCase()) ||
+      (u.member_id || '').toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || u.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
-  const getPlanName = (planId) => {
-    const plan = membershipPlans.find(p => p.id === planId);
-    return plan ? plan.name : '—';
+  const handleAddUser = async () => {
+    if (!newUser.full_name || !newUser.password || !newUser.card_id) {
+      toast.error('Name, password and card ID are required.');
+      return;
+    }
+    setSaving(true);
+    try {
+      // Generate a synthetic email if none provided
+      const email = newUser.email.trim() || `${newUser.card_id.toLowerCase()}@members.eliteclub.local`;
+
+      // Create auth user with non-persisting client
+      const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
+        email,
+        password: newUser.password,
+      });
+      if (authError) throw authError;
+
+      const userId = authData.user.id;
+
+      // Create profile
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: userId,
+        email,
+        full_name: newUser.full_name.trim(),
+        phone: newUser.phone.trim(),
+        role: 'member',
+        status: 'active',
+        plan: newUser.plan,
+        card_id: newUser.card_id,
+        member_id: newUser.card_id,
+        join_date: new Date().toISOString(),
+      });
+      if (profileError) throw profileError;
+
+      // Assign the QR card
+      await supabase.from('qr_cards')
+        .update({ status: 'assigned', assigned_to: userId, assigned_at: new Date().toISOString() })
+        .eq('card_id', newUser.card_id);
+
+      toast.success(`User ${newUser.full_name} created! Member ID: ${newUser.card_id}`);
+      setAddModal(false);
+      setNewUser({ full_name: '', email: '', phone: '', plan: 'dainik', card_id: '', password: '' });
+      fetchData();
+    } catch (err) {
+      toast.error(err.message || 'Failed to create user.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditUser = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('profiles')
+        .update({
+          full_name: editForm.full_name,
+          phone: editForm.phone,
+          status: editForm.status,
+          plan: editForm.plan,
+          expiry_date: editForm.expiry_date || null,
+        })
+        .eq('id', editForm.id);
+      if (error) throw error;
+      toast.success('User updated.');
+      setEditModal(false);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -36,10 +132,10 @@ export default function AdminUsers() {
           <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">
             User <span className="text-gold-gradient">Management</span>
           </h1>
-          <p className="text-smoke">Manage members, view details, and control access.</p>
+          <p className="text-smoke">Manage members, assign cards, and control access.</p>
         </div>
-        <Button variant="gold" size="sm" icon={UserPlus}>
-          Add User
+        <Button variant="gold" size="sm" icon={UserPlus} onClick={() => setAddModal(true)}>
+          Add Member
         </Button>
       </div>
 
@@ -48,120 +144,161 @@ export default function AdminUsers() {
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gold-muted" />
-            <input
-              type="text"
-              placeholder="Search by name or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full elite-input rounded-xl pl-11 pr-4 py-3 text-sm"
-            />
+            <input type="text" placeholder="Search by name or Member ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full elite-input rounded-xl pl-11 pr-4 py-3 text-sm" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Filter size={16} className="text-gold" />
             {['all', 'active', 'inactive', 'pending', 'expired'].map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize cursor-pointer ${
-                  statusFilter === s
-                    ? 'bg-gold/15 text-gold border border-gold/25'
-                    : 'text-smoke hover:text-champagne hover:bg-white/5 border border-transparent'
-                }`}
-              >
+              <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize cursor-pointer ${statusFilter === s ? 'bg-gold/15 text-gold border border-gold/25' : 'text-smoke hover:text-champagne hover:bg-white/5 border border-transparent'}`}>
                 {s}
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setViewMode(viewMode === 'masked' ? 'full' : 'masked')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-gold border border-gold/20 hover:bg-gold/5 transition-all cursor-pointer"
-          >
-            <Eye size={14} />
-            {viewMode === 'masked' ? 'Show Full Details' : 'Mask Details'}
+          <button onClick={() => setViewMode(viewMode === 'masked' ? 'full' : 'masked')} className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-gold border border-gold/20 hover:bg-gold/5 transition-all cursor-pointer shrink-0">
+            {viewMode === 'masked' ? <Eye size={14} /> : <EyeOff size={14} />}
+            {viewMode === 'masked' ? 'Show Full' : 'Mask'}
           </button>
         </div>
       </GlassCard>
 
       {/* Table */}
       <GlassCard hover={false} className="overflow-x-auto">
-        <table className="elite-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Contact</th>
-              <th>Plan</th>
-              <th>Status</th>
-              <th>Expiry</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((user, i) => (
-              <motion.tr
-                key={user.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-              >
-                <td className="font-mono text-gold text-xs">{user.id}</td>
-                <td className="text-champagne font-medium">{user.name}</td>
-                <td className="text-smoke text-xs">
-                  <div>{viewMode === 'masked' ? maskEmail(user.email) : user.email}</div>
-                  <div className="mt-0.5">{viewMode === 'masked' ? maskPhone(user.phone) : user.phone}</div>
-                </td>
-                <td className="text-champagne-dark text-xs">{getPlanName(user.plan)}</td>
-                <td><Badge status={user.status} /></td>
-                <td className="text-smoke text-xs">{formatDate(user.expiryDate)}</td>
-                <td>
-                  <div className="flex items-center gap-2">
+        {loading ? (
+          <p className="text-smoke text-center py-12">Loading users...</p>
+        ) : (
+          <table className="elite-table">
+            <thead>
+              <tr>
+                <th>Member ID</th>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((user, i) => (
+                <motion.tr key={user.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                  <td className="font-mono text-gold text-xs">{user.member_id || '—'}</td>
+                  <td className="text-champagne font-medium">{user.full_name}</td>
+                  <td className="text-smoke text-xs">
+                    <div>{viewMode === 'masked' ? maskEmail(user.email) : user.email}</div>
+                    <div className="mt-0.5">{viewMode === 'masked' ? maskPhone(user.phone) : user.phone}</div>
+                  </td>
+                  <td className="text-champagne-dark text-xs capitalize">{user.plan || '—'}</td>
+                  <td><Badge status={user.status} /></td>
+                  <td className="text-smoke text-xs">{formatDate(user.join_date)}</td>
+                  <td>
                     <button
-                      onClick={() => { setSelectedUser(user); setEditModal(true); }}
+                      onClick={() => { setEditForm({ ...user }); setEditModal(true); }}
                       className="p-2 rounded-lg hover:bg-gold/10 text-smoke hover:text-gold transition-all cursor-pointer"
                     >
                       <Edit3 size={14} />
                     </button>
-                    <button className="p-2 rounded-lg hover:bg-gold/10 text-smoke hover:text-gold transition-all cursor-pointer">
-                      <RefreshCw size={14} />
-                    </button>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && (
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-smoke">No users found.</div>
         )}
       </GlassCard>
 
-      {/* Edit Modal */}
-      <Modal
-        isOpen={editModal}
-        onClose={() => setEditModal(false)}
-        title="Edit User"
-        size="md"
-      >
-        {selectedUser && (
-          <div className="space-y-4">
-            <Input label="Full Name" value={selectedUser.name} onChange={() => {}} />
-            <Input label="Email" type="email" value={selectedUser.email} onChange={() => {}} />
-            <Input label="Phone" value={selectedUser.phone} onChange={() => {}} />
+      {/* Add User Modal */}
+      <Modal isOpen={addModal} onClose={() => setAddModal(false)} title="Add New Member" size="lg">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark">Full Name *</label>
+              <input value={newUser.full_name} onChange={e => setNewUser(p => ({ ...p, full_name: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" placeholder="Member's full name" />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark">Phone</label>
+              <input value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" placeholder="+91 98765 43210" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark">Email (optional)</label>
+              <input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" placeholder="member@email.com" />
+              <p className="text-ash text-xs">If empty, auto-generated from Card ID</p>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark">Plan *</label>
+              <select value={newUser.plan} onChange={e => setNewUser(p => ({ ...p, plan: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
+                <option value="dainik">Dainik Member</option>
+                <option value="decka">Decka Member</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark flex items-center gap-2"><CreditCard size={14} className="text-gold" /> Assign Card ID *</label>
+              <select value={newUser.card_id} onChange={e => setNewUser(p => ({ ...p, card_id: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
+                <option value="">Select available card...</option>
+                {cards.map(c => (
+                  <option key={c.card_id} value={c.card_id}>{c.card_id}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark flex items-center gap-2"><Lock size={14} className="text-gold" /> Password *</label>
+              <input type="text" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" placeholder="Set member password" />
+            </div>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <Button variant="gold" className="flex-1" onClick={handleAddUser} disabled={saving}>
+              {saving ? 'Creating...' : 'Create Member'}
+            </Button>
+            <Button variant="ghost" onClick={() => setAddModal(false)}>Cancel</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal isOpen={editModal} onClose={() => setEditModal(false)} title="Edit Member" size="md">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-champagne-dark">Full Name</label>
+            <input value={editForm.full_name || ''} onChange={e => setEditForm(p => ({ ...p, full_name: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-champagne-dark">Phone</label>
+            <input value={editForm.phone || ''} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Status</label>
-              <select className="w-full elite-input rounded-xl px-4 py-3 text-sm" defaultValue={selectedUser.status}>
+              <select value={editForm.status || 'active'} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="pending">Pending</option>
                 <option value="expired">Expired</option>
               </select>
             </div>
-            <div className="flex gap-3 pt-4">
-              <Button variant="gold" className="flex-1">Save Changes</Button>
-              <Button variant="ghost" onClick={() => setEditModal(false)}>Cancel</Button>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark">Plan</label>
+              <select value={editForm.plan || ''} onChange={e => setEditForm(p => ({ ...p, plan: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
+                <option value="dainik">Dainik</option>
+                <option value="decka">Decka</option>
+              </select>
             </div>
           </div>
-        )}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-champagne-dark">Member ID</label>
+            <p className="text-gold font-mono text-sm">{editForm.member_id || 'Not assigned'}</p>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <Button variant="gold" className="flex-1" onClick={handleEditUser} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+            <Button variant="ghost" onClick={() => setEditModal(false)}>Cancel</Button>
+          </div>
+        </div>
       </Modal>
     </PageTransition>
   );

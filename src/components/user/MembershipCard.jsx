@@ -2,6 +2,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Crown } from 'lucide-react';
 import logo from '../../assets/logo.png';
+import { formatDate } from '../../utils/helpers';
+import { getQRScanUrl } from '../../lib/qrConfig';
 
 export default function MembershipCard({ user, isActive, showCard, onToggle }) {
   if (!isActive) {
@@ -21,9 +23,6 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
         <p className="text-smoke text-sm mb-6">
           Your membership is currently inactive or pending approval.
         </p>
-        <button className="btn-gold px-6 py-3 rounded-xl text-sm font-semibold">
-          Activate Membership
-        </button>
       </motion.div>
     );
   }
@@ -49,9 +48,9 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
           initial={{ opacity: 0, rotateY: -90 }}
           animate={{ opacity: 1, rotateY: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          whileHover={{ 
-            scale: 1.02, 
-            rotateX: 2, 
+          whileHover={{
+            scale: 1.02,
+            rotateX: 2,
             rotateY: -2,
             boxShadow: "0 25px 50px -12px rgba(201,169,78,0.25)"
           }}
@@ -61,29 +60,29 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
           <div className="flex items-start justify-between mb-6">
             <img src={logo} alt="EliteClub" className="h-10 w-auto" />
             <span className="text-xs text-gold font-semibold tracking-[0.15em] uppercase bg-gold/10 border border-gold/20 px-3 py-1 rounded-full">
-              {user.planName}
+              {user.plan ? `${user.plan} Member` : 'Member'}
             </span>
           </div>
 
           {/* Member Info */}
           <div className="mb-6">
-            <p className="text-champagne font-playfair text-xl font-bold">{user.name}</p>
-            <p className="text-gold text-sm font-mono mt-1">{user.memberId}</p>
+            <p className="text-champagne font-playfair text-xl font-bold">{user.full_name}</p>
+            <p className="text-gold text-sm font-mono mt-1">{user.member_id || user.card_id || '—'}</p>
           </div>
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4 mb-6 text-xs">
             <div>
               <p className="text-smoke">Valid From</p>
-              <p className="text-champagne-dark font-medium">{user.joinDate}</p>
+              <p className="text-champagne-dark font-medium">{formatDate(user.join_date)}</p>
             </div>
             <div>
               <p className="text-smoke">Valid Until</p>
-              <p className="text-champagne-dark font-medium">{user.expiryDate}</p>
+              <p className="text-champagne-dark font-medium">{formatDate(user.expiry_date)}</p>
             </div>
           </div>
 
-          {/* QR Code */}
+          {/* QR Code — contains ONLY the Card ID */}
           <div className="flex items-end justify-between">
             <div className="text-xs text-smoke">
               <p>Scan at any partner venue</p>
@@ -91,7 +90,7 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
             </div>
             <div className="bg-white rounded-lg p-2">
               <QRCodeSVG
-                value={`ELITECLUB:${user.memberId}:${user.id}:${user.plan}`}
+                value={getQRScanUrl(user.card_id || user.member_id || 'ELITECLUB')}
                 size={72}
                 level="M"
                 fgColor="#0A0A0A"

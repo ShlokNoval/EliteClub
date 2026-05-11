@@ -1,24 +1,51 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Phone, Mail, MapPin } from 'lucide-react';
+import { Send, Phone, Mail, MapPin, CheckCircle2 } from 'lucide-react';
 import SectionHeading from '../common/SectionHeading';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import { brandInfo } from '../../data/mockData';
+import { supabase } from '../../lib/supabase';
 
 export default function ContactForm() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
-    setForm({ name: '', email: '', phone: '', message: '' });
+    if (!form.name || !form.email || !form.message) return;
+
+    setSending(true);
+    setError('');
+
+    try {
+      // Store in Supabase database
+      const { error: dbError } = await supabase.from('contact_messages').insert({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        message: form.message.trim(),
+      });
+
+      if (dbError) throw dbError;
+
+      setSubmitted(true);
+      setForm({ name: '', email: '', phone: '', message: '' });
+
+      // Reset after 5 seconds
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err) {
+      console.error('Contact form error:', err);
+      setError('Something went wrong. Please try emailing us directly at parthpawareliteclub@gmail.com');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -52,8 +79,8 @@ export default function ContactForm() {
 
             <div className="space-y-6">
               {[
-                { icon: Phone, label: 'Call Us', value: brandInfo.phone },
-                { icon: Mail, label: 'Email Us', value: brandInfo.email },
+                { icon: Phone, label: 'Call Us', value: brandInfo.phone, href: `tel:${brandInfo.phone?.replace(/\s/g, '')}` },
+                { icon: Mail, label: 'Email Us', value: 'parthpawareliteclub@gmail.com', href: 'mailto:parthpawareliteclub@gmail.com' },
                 { icon: MapPin, label: 'Location', value: brandInfo.location },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4">
@@ -62,7 +89,11 @@ export default function ContactForm() {
                   </div>
                   <div>
                     <p className="text-champagne-dark text-sm font-medium">{item.label}</p>
-                    <p className="text-smoke text-sm">{item.value}</p>
+                    {item.href ? (
+                      <a href={item.href} className="text-smoke text-sm hover:text-gold transition-colors">{item.value}</a>
+                    ) : (
+                      <p className="text-smoke text-sm">{item.value}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -85,12 +116,12 @@ export default function ContactForm() {
                 animate={{ opacity: 1, scale: 1 }}
               >
                 <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-4">
-                  <Send size={24} className="text-green-400" />
+                  <CheckCircle2 size={28} className="text-green-400" />
                 </div>
                 <h3 className="font-playfair text-xl font-semibold text-champagne mb-2">
                   Message Sent!
                 </h3>
-                <p className="text-smoke text-sm">We'll get back to you shortly.</p>
+                <p className="text-smoke text-sm">Thank you for reaching out. We'll get back to you shortly.</p>
               </motion.div>
             ) : (
               <div className="space-y-5">
@@ -133,8 +164,20 @@ export default function ContactForm() {
                     className="w-full elite-input rounded-xl px-4 py-3 text-sm resize-none"
                   />
                 </div>
-                <Button type="submit" variant="gold" size="lg" icon={Send} className="w-full mt-2">
-                  Send Message
+
+                {error && (
+                  <p className="text-red-400 text-sm text-center">{error}</p>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="gold"
+                  size="lg"
+                  icon={Send}
+                  className="w-full mt-2"
+                  disabled={sending}
+                >
+                  {sending ? 'Sending...' : 'Send Message'}
                 </Button>
               </div>
             )}

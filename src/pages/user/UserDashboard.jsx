@@ -1,25 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  Crown, CreditCard, MapPin, Calendar, IndianRupee, Star,
-  ArrowLeft, LogOut, User, Wine, TrendingUp
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Crown, CreditCard, MapPin, Calendar, IndianRupee, Star, ArrowLeft, LogOut, User, Wine, TrendingUp } from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import MembershipCard from '../../components/user/MembershipCard';
 import Badge from '../../components/common/Badge';
-import { currentUser, membershipPlans, partnerVenues } from '../../data/mockData';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { formatCurrency, formatDate } from '../../utils/helpers';
+import { membershipPlans, partnerVenues } from '../../data/mockData';
 import logo from '../../assets/logo.png';
 
 export default function UserDashboard() {
+  const { profile, logout } = useAuth();
   const [showCard, setShowCard] = useState(true);
-  const [memberStatus] = useState('active'); // Toggle to 'inactive' to see inactive state
-  const navigate = useNavigate();
-  const user = currentUser;
-  const plan = membershipPlans.find(p => p.id === user.plan);
-  const isActive = memberStatus === 'active';
+  const [stats, setStats] = useState({ visits: 0, totalSaved: 0, totalSpent: 0 });
+  const [loading, setLoading] = useState(true);
+
+  const plan = membershipPlans.find(p => p.id === profile?.plan);
+  const isActive = profile?.status === 'active';
+
+  useEffect(() => {
+    if (profile?.id) fetchStats();
+  }, [profile]);
+
+  const fetchStats = async () => {
+    try {
+      const [visitsRes, billsRes] = await Promise.all([
+        supabase.from('visits').select('id').eq('member_id', profile.id),
+        supabase.from('bills').select('food_bev_cost, liquor_cost_billed, savings').eq('member_id', profile.id),
+      ]);
+      const visits = visitsRes.data || [];
+      const bills = billsRes.data || [];
+      setStats({
+        visits: visits.length,
+        totalSpent: bills.reduce((s, b) => s + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0),
+        totalSaved: bills.reduce((s, b) => s + Number(b.savings || 0), 0),
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!profile) return null;
 
   return (
     <div className="min-h-screen bg-black-primary">
@@ -35,16 +61,13 @@ export default function UserDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-champagne text-sm font-medium">{user.name}</p>
-              <p className="text-ash text-xs">{user.memberId}</p>
+              <p className="text-champagne text-sm font-medium">{profile.full_name}</p>
+              <p className="text-ash text-xs">{profile.member_id}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center">
               <User size={18} className="text-gold" />
             </div>
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 text-smoke hover:text-red-400 transition-colors cursor-pointer"
-            >
+            <button onClick={logout} className="p-2 text-smoke hover:text-red-400 transition-colors cursor-pointer">
               <LogOut size={18} />
             </button>
           </div>
@@ -54,35 +77,26 @@ export default function UserDashboard() {
       <PageTransition>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Welcome */}
-          <motion.div
-            className="mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div className="mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">
-              Welcome back, <span className="text-gold-gradient">{user.name.split(' ')[0]}</span>
+              Welcome back, <span className="text-gold-gradient">{profile.full_name?.split(' ')[0]}</span>
             </h1>
             <p className="text-smoke">Manage your membership and access your privileges.</p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Card + Profile */}
+            {/* Left Column */}
             <div className="lg:col-span-2 space-y-8">
               {/* Membership Card */}
-              <MembershipCard
-                user={user}
-                isActive={isActive}
-                showCard={showCard}
-                onToggle={() => setShowCard(!showCard)}
-              />
+              <MembershipCard user={profile} isActive={isActive} showCard={showCard} onToggle={() => setShowCard(!showCard)} />
 
               {/* Quick Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                   { icon: CreditCard, label: 'Plan', value: plan?.name || '—', color: 'text-gold' },
-                  { icon: Calendar, label: 'Expires', value: formatDate(user.expiryDate), color: 'text-champagne' },
-                  { icon: MapPin, label: 'Visits', value: user.visitsCount, color: 'text-green-400' },
-                  { icon: IndianRupee, label: 'Total Spent', value: formatCurrency(user.totalSpent), color: 'text-gold-light' },
+                  { icon: Calendar, label: 'Expires', value: formatDate(profile.expiry_date), color: 'text-champagne' },
+                  { icon: MapPin, label: 'Visits', value: loading ? '...' : stats.visits, color: 'text-green-400' },
+                  { icon: IndianRupee, label: 'Saved', value: loading ? '...' : formatCurrency(stats.totalSaved), color: 'text-gold-light' },
                 ].map((stat, i) => (
                   <GlassCard key={i} delay={i * 0.1} className="text-center p-4">
                     <stat.icon size={20} className={`${stat.color} mx-auto mb-2`} />
@@ -92,12 +106,11 @@ export default function UserDashboard() {
                 ))}
               </div>
 
-              {/* Plan Details */}
+              {/* Plan Benefits */}
               {plan && (
                 <GlassCard hover={false}>
                   <h3 className="font-playfair text-lg font-semibold text-champagne mb-4 flex items-center gap-2">
-                    <Wine size={20} className="text-gold" />
-                    Plan Benefits
+                    <Wine size={20} className="text-gold" /> Plan Benefits
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {plan.features.map((feature, i) => (
@@ -109,65 +122,50 @@ export default function UserDashboard() {
                   </div>
                 </GlassCard>
               )}
+
+              {/* Savings Breakdown */}
+              {stats.totalSaved > 0 && (
+                <GlassCard hover={false}>
+                  <h3 className="font-playfair text-lg font-semibold text-champagne mb-4 flex items-center gap-2">
+                    <TrendingUp size={20} className="text-green-400" /> Your Savings
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 rounded-xl bg-green-400/5 border border-green-400/10">
+                      <p className="text-3xl font-bold text-green-400">{formatCurrency(stats.totalSaved)}</p>
+                      <p className="text-smoke text-xs mt-1">Total Liquor Savings</p>
+                    </div>
+                    <div className="text-center p-4 rounded-xl bg-gold/5 border border-gold/10">
+                      <p className="text-3xl font-bold text-gold">{formatCurrency(stats.totalSpent)}</p>
+                      <p className="text-smoke text-xs mt-1">Total Spent</p>
+                    </div>
+                  </div>
+                </GlassCard>
+              )}
             </div>
 
-            {/* Right Column - Profile Summary */}
+            {/* Right Column */}
             <div className="space-y-6">
-              {/* Status */}
+              {/* Profile */}
               <GlassCard hover={false}>
                 <div className="text-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto mb-3">
                     <Crown size={28} className="text-gold" />
                   </div>
-                  <h3 className="font-playfair text-lg font-semibold text-champagne">{user.name}</h3>
-                  <p className="text-smoke text-sm">{user.email}</p>
-                  <div className="mt-3">
-                    <Badge status={isActive ? 'active' : 'inactive'} />
-                  </div>
+                  <h3 className="font-playfair text-lg font-semibold text-champagne">{profile.full_name}</h3>
+                  <p className="text-smoke text-sm">{profile.email}</p>
+                  <div className="mt-3"><Badge status={profile.status} /></div>
                 </div>
-
                 <div className="border-t border-gold/10 pt-4 space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-smoke">Member ID</span>
-                    <span className="text-champagne font-mono">{user.memberId}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-smoke">Phone</span>
-                    <span className="text-champagne">{user.phone}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-smoke">Plan</span>
-                    <span className="text-gold font-medium">{plan?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-smoke">Member Since</span>
-                    <span className="text-champagne">{formatDate(user.joinDate)}</span>
-                  </div>
+                  <div className="flex justify-between"><span className="text-smoke">Member ID</span><span className="text-champagne font-mono">{profile.member_id}</span></div>
+                  <div className="flex justify-between"><span className="text-smoke">Phone</span><span className="text-champagne">{profile.phone || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold font-medium">{plan?.name || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-smoke">Member Since</span><span className="text-champagne">{formatDate(profile.join_date)}</span></div>
                 </div>
               </GlassCard>
 
-              {/* Favourite Venue */}
+              {/* Partner Venues */}
               <GlassCard hover={false}>
-                <h3 className="text-sm font-semibold text-gold mb-3 flex items-center gap-2">
-                  <TrendingUp size={16} />
-                  Most Visited
-                </h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gold/8 border border-gold/15 flex items-center justify-center">
-                    <MapPin size={18} className="text-gold" />
-                  </div>
-                  <div>
-                    <p className="text-champagne text-sm font-medium">{user.favouriteVenue}</p>
-                    <p className="text-smoke text-xs">Your favourite venue</p>
-                  </div>
-                </div>
-              </GlassCard>
-
-              {/* Partner Venues Quick List */}
-              <GlassCard hover={false}>
-                <h3 className="text-sm font-semibold text-gold mb-3">
-                  Available Venues ({partnerVenues.length})
-                </h3>
+                <h3 className="text-sm font-semibold text-gold mb-3">Available Venues ({partnerVenues.length})</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {partnerVenues.slice(0, 6).map((v) => (
                     <div key={v.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-white/3 last:border-0">
@@ -175,9 +173,7 @@ export default function UserDashboard() {
                       <span className="text-champagne-dark">{v.name}</span>
                     </div>
                   ))}
-                  {partnerVenues.length > 6 && (
-                    <p className="text-gold text-xs pt-1">+{partnerVenues.length - 6} more venues</p>
-                  )}
+                  {partnerVenues.length > 6 && <p className="text-gold text-xs pt-1">+{partnerVenues.length - 6} more venues</p>}
                 </div>
               </GlassCard>
             </div>
