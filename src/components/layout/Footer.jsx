@@ -74,11 +74,16 @@ export default function Footer() {
             </ul>
             {/* Social */}
             <div className="flex gap-3 mt-6">
-              {[Globe, Share2, ExternalLink].map((Icon, i) => (
+              {[
+                { Icon: Globe, label: 'Website' },
+                { Icon: Share2, label: 'Share' },
+                { Icon: ExternalLink, label: 'External Link' }
+              ].map(({ Icon, label }, i) => (
                 <a
                   key={i}
                   href="#"
                   className="w-10 h-10 rounded-lg border border-gold/15 flex items-center justify-center text-smoke hover:text-gold hover:border-gold/30 transition-all duration-300"
+                  aria-label={label}
                 >
                   <Icon size={18} />
                 </a>
