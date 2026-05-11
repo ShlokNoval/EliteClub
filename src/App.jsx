@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import BackToTop from './components/common/BackToTop';
 
 // Layouts
 import PublicLayout from './layouts/PublicLayout';
@@ -59,6 +60,7 @@ function App() {
           </Route>
         </Routes>
       </AnimatePresence>
+      <BackToTop />
     </BrowserRouter>
   );
 }
