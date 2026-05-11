@@ -47,6 +47,8 @@ function BenefitCard({ benefit }) {
       className="relative rounded-2xl overflow-hidden group"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      role="article"
+      aria-label={`Benefit: ${benefit.title}`}
     >
       <motion.div 
         className="absolute inset-0 z-20 pointer-events-none opacity-0 transition-opacity duration-300 group-hover:opacity-100 mix-blend-overlay"
