@@ -25,7 +25,7 @@ export default function ContactForm() {
     setError('');
 
     try {
-      // Store in Supabase database
+      // 1. Store in Supabase database (as backup)
       const { error: dbError } = await supabase.from('contact_messages').insert({
         name: form.name.trim(),
         email: form.email.trim(),
@@ -35,11 +35,34 @@ export default function ContactForm() {
 
       if (dbError) throw dbError;
 
-      setSubmitted(true);
-      setForm({ name: '', email: '', phone: '', message: '' });
+      // 2. Send Real Email via Web3Forms
+      // This sends the message directly to parthpawareliteclub@gmail.com
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          access_key: import.meta.env.VITE_WEB3FORMS_KEY || 'YOUR_ACCESS_KEY_HERE',
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          message: form.message,
+          from_name: 'EliteClub Website Inquiry',
+          subject: `New Message from ${form.name}`,
+        })
+      });
 
-      // Reset after 5 seconds
-      setTimeout(() => setSubmitted(false), 5000);
+      const result = await response.json();
+
+      if (result.success || !dbError) {
+        setSubmitted(true);
+        setForm({ name: '', email: '', phone: '', message: '' });
+        setTimeout(() => setSubmitted(false), 5000);
+      } else {
+        throw new Error('Email delivery failed');
+      }
     } catch (err) {
       console.error('Contact form error:', err);
       setError('Something went wrong. Please try emailing us directly at parthpawareliteclub@gmail.com');
