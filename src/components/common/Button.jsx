@@ -1,6 +1,16 @@
 import { motion } from 'framer-motion';
 
-export default function Button({ children, variant = 'gold', size = 'md', className = '', onClick, type = 'button', disabled = false, icon: Icon }) {
+export default function Button({ 
+  children, 
+  variant = 'gold', 
+  size = 'md', 
+  className = '', 
+  onClick, 
+  type = 'button', 
+  disabled = false, 
+  icon: Icon,
+  'aria-label': ariaLabel 
+}) {
   const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-lg font-semibold tracking-wide cursor-pointer transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
@@ -23,6 +33,7 @@ export default function Button({ children, variant = 'gold', size = 'md', classN
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
       whileHover={disabled ? {} : { 
         scale: 1.05, 
