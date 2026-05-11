@@ -67,7 +67,10 @@ export default function Navbar() {
             {/* CTA */}
             <div className="hidden lg:flex items-center shrink-0">
               <Link to="/login">
-                <button className="relative group overflow-hidden rounded-full border border-gold/40 bg-black/25 backdrop-blur-sm px-6 py-2.5 transition-all duration-300 hover:border-gold/80 hover:shadow-[0_0_20px_rgba(201,169,78,0.25)]">
+                <button 
+                  className="relative group overflow-hidden rounded-full border border-gold/40 bg-black/25 backdrop-blur-sm px-6 py-2.5 transition-all duration-300 hover:border-gold/80 hover:shadow-[0_0_20px_rgba(201,169,78,0.25)]"
+                  aria-label="Member Login"
+                >
                   <div className="absolute inset-0 w-0 bg-gold/10 transition-all duration-300 ease-out group-hover:w-full" />
                   <span className="relative flex items-center gap-2 text-gold text-xs font-semibold uppercase tracking-widest">
                     <Crown size={13} /> Member Login
@@ -80,6 +83,8 @@ export default function Navbar() {
             <button
               onClick={() => setIsMobileOpen(!isMobileOpen)}
               className="lg:hidden p-2 text-champagne hover:text-gold transition-colors"
+              aria-label={isMobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileOpen}
             >
               {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
