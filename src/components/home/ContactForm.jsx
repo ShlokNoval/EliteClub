@@ -56,13 +56,14 @@ export default function ContactForm() {
 
       const result = await response.json();
 
-      if (result.success || !dbError) {
-        setSubmitted(true);
-        setForm({ name: '', email: '', phone: '', message: '' });
-        setTimeout(() => setSubmitted(false), 5000);
-      } else {
-        throw new Error('Email delivery failed');
+      if (!result.success) {
+        console.error('Web3Forms Error:', result);
+        throw new Error(result.message || 'Email delivery failed');
       }
+
+      setSubmitted(true);
+      setForm({ name: '', email: '', phone: '', message: '' });
+      setTimeout(() => setSubmitted(false), 5000);
     } catch (err) {
       console.error('Contact form error:', err);
       setError('Something went wrong. Please try emailing us directly at parthpawareliteclub@gmail.com');

@@ -18,14 +18,24 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('1. Form submitted, setting loading to true');
     setLoading(true);
     try {
-      await loginAdmin(email.trim(), password);
+      console.log('2. Calling loginAdmin with:', email);
+      const result = await loginAdmin(email.trim(), password);
+      console.log('3. loginAdmin succeeded:', result);
       toast.success('Welcome, Admin.');
+      console.log('4. Navigating to /admin');
       navigate('/admin');
     } catch (err) {
-      toast.error(err.message);
+      console.log('5. Catch block hit:', err);
+      if (toast && toast.error) {
+        toast.error(err.message || 'Login failed');
+      } else {
+        alert('Login failed: ' + (err.message || 'Unknown error'));
+      }
     } finally {
+      console.log('6. Finally block hit, setting loading to false');
       setLoading(false);
     }
   };
