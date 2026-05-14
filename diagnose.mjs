@@ -13,9 +13,10 @@ async function verify() {
 
   // Step 1: Admin login so RPC can verify we're admin
   console.log('Step 1: Logging in as admin...');
+  // NOTE: update password below if this fails
   const { data: adminData, error: adminError } = await supabase.auth.signInWithPassword({
     email: 'parthpawareliteclub@gmail.com',
-    password: 'Parth@1234'
+    password: 'ParthInFifaWorldCup'
   });
   if (adminError) {
     console.error('Admin login failed:', adminError.message);
