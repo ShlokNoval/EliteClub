@@ -1,100 +1,104 @@
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/common/Toast';
+import LoadingScreen from './components/common/LoadingScreen';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import BackToTop from './components/common/BackToTop';
 
-// Layouts
-import PublicLayout from './layouts/PublicLayout';
-import DashboardLayout from './layouts/DashboardLayout';
+// Layouts (Lazy)
+const PublicLayout = lazy(() => import('./layouts/PublicLayout'));
+const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
 
-// Public
-import HomePage from './pages/public/HomePage';
-import ScanPage from './pages/public/ScanPage';
+// Public (Lazy)
+const HomePage = lazy(() => import('./pages/public/HomePage'));
+const ScanPage = lazy(() => import('./pages/public/ScanPage'));
 
-// Auth
-import LoginPage from './pages/auth/LoginPage';
-import HotelLoginPage from './pages/auth/HotelLoginPage';
-import AdminLoginPage from './pages/auth/AdminLoginPage';
-import HotelRegisterPage from './pages/auth/HotelRegisterPage';
+// Auth (Lazy)
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const HotelLoginPage = lazy(() => import('./pages/auth/HotelLoginPage'));
+const AdminLoginPage = lazy(() => import('./pages/auth/AdminLoginPage'));
+const HotelRegisterPage = lazy(() => import('./pages/auth/HotelRegisterPage'));
 
-// User
-import UserDashboard from './pages/user/UserDashboard';
+// User (Lazy)
+const UserDashboard = lazy(() => import('./pages/user/UserDashboard'));
 
-// Admin
-import AdminOverview from './pages/admin/AdminOverview';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminHotels from './pages/admin/AdminHotels';
-import AdminCards from './pages/admin/AdminCards';
-import AdminBills from './pages/admin/AdminBills';
-import AdminReports from './pages/admin/AdminReports';
-import AdminMessages from './pages/admin/AdminMessages';
+// Admin (Lazy)
+const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminHotels = lazy(() => import('./pages/admin/AdminHotels'));
+const AdminCards = lazy(() => import('./pages/admin/AdminCards'));
+const AdminBills = lazy(() => import('./pages/admin/AdminBills'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
+const AdminMessages = lazy(() => import('./pages/admin/AdminMessages'));
 
-// Hotel
-import HotelOverview from './pages/hotel/HotelOverview';
-import HotelScanner from './pages/hotel/HotelScanner';
-import HotelScans from './pages/hotel/HotelScans';
-import HotelBillUpload from './pages/hotel/HotelBillUpload';
-import HotelVisits from './pages/hotel/HotelVisits';
+// Hotel (Lazy)
+const HotelOverview = lazy(() => import('./pages/hotel/HotelOverview'));
+const HotelScanner = lazy(() => import('./pages/hotel/HotelScanner'));
+const HotelScans = lazy(() => import('./pages/hotel/HotelScans'));
+const HotelBillUpload = lazy(() => import('./pages/hotel/HotelBillUpload'));
+const HotelVisits = lazy(() => import('./pages/hotel/HotelVisits'));
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <AnimatePresence mode="wait">
-            <Routes>
-              {/* Public */}
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<HomePage />} />
-              </Route>
+          <Suspense fallback={<LoadingScreen />}>
+            <AnimatePresence mode="wait">
+              <Routes>
+                {/* Public */}
+                <Route element={<PublicLayout />}>
+                  <Route path="/" element={<HomePage />} />
+                </Route>
 
-              {/* QR Scan Landing (public) */}
-              <Route path="/scan/:cardId" element={<ScanPage />} />
+                {/* QR Scan Landing (public) */}
+                <Route path="/scan/:cardId" element={<ScanPage />} />
 
-              {/* Auth */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/hotel-login" element={<HotelLoginPage />} />
-              <Route path="/admin-login" element={<AdminLoginPage />} />
-              <Route path="/hotel-register" element={<HotelRegisterPage />} />
+                {/* Auth */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/hotel-login" element={<HotelLoginPage />} />
+                <Route path="/admin-login" element={<AdminLoginPage />} />
+                <Route path="/hotel-register" element={<HotelRegisterPage />} />
 
-              {/* Member Dashboard (protected) */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute allowedRoles={['member']}>
-                  <UserDashboard />
-                </ProtectedRoute>
-              } />
+                {/* Member Dashboard (protected) */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute allowedRoles={['member']}>
+                    <UserDashboard />
+                  </ProtectedRoute>
+                } />
 
-              {/* Admin Dashboard (protected) */}
-              <Route element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <DashboardLayout type="admin" />
-                </ProtectedRoute>
-              }>
-                <Route path="/admin" element={<AdminOverview />} />
-                <Route path="/admin/users" element={<AdminUsers />} />
-                <Route path="/admin/hotels" element={<AdminHotels />} />
-                <Route path="/admin/cards" element={<AdminCards />} />
-                <Route path="/admin/bills" element={<AdminBills />} />
-                <Route path="/admin/reports" element={<AdminReports />} />
-                <Route path="/admin/messages" element={<AdminMessages />} />
-              </Route>
+                {/* Admin Dashboard (protected) */}
+                <Route element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout type="admin" />
+                  </ProtectedRoute>
+                }>
+                  <Route path="/admin" element={<AdminOverview />} />
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/hotels" element={<AdminHotels />} />
+                  <Route path="/admin/cards" element={<AdminCards />} />
+                  <Route path="/admin/bills" element={<AdminBills />} />
+                  <Route path="/admin/reports" element={<AdminReports />} />
+                  <Route path="/admin/messages" element={<AdminMessages />} />
+                </Route>
 
-              {/* Hotel Dashboard (protected) */}
-              <Route element={
-                <ProtectedRoute allowedRoles={['hotel']}>
-                  <DashboardLayout type="hotel" />
-                </ProtectedRoute>
-              }>
-                <Route path="/hotel" element={<HotelOverview />} />
-                <Route path="/hotel/scanner" element={<HotelScanner />} />
-                <Route path="/hotel/scans" element={<HotelScans />} />
-                <Route path="/hotel/bills" element={<HotelBillUpload />} />
-                <Route path="/hotel/visits" element={<HotelVisits />} />
-              </Route>
-            </Routes>
-          </AnimatePresence>
+                {/* Hotel Dashboard (protected) */}
+                <Route element={
+                  <ProtectedRoute allowedRoles={['hotel']}>
+                    <DashboardLayout type="hotel" />
+                  </ProtectedRoute>
+                }>
+                  <Route path="/hotel" element={<HotelOverview />} />
+                  <Route path="/hotel/scanner" element={<HotelScanner />} />
+                  <Route path="/hotel/scans" element={<HotelScans />} />
+                  <Route path="/hotel/bills" element={<HotelBillUpload />} />
+                  <Route path="/hotel/visits" element={<HotelVisits />} />
+                </Route>
+              </Routes>
+            </AnimatePresence>
+          </Suspense>
           <BackToTop />
         </ToastProvider>
       </AuthProvider>
