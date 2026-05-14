@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext({});
@@ -9,34 +9,7 @@ export function AuthProvider({ children }) {
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchUserData(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          await fetchUserData(session.user.id);
-        } else {
-          setUser(null);
-          setProfile(null);
-          setHotel(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserData = async (userId) => {
+  const fetchUserData = useCallback(async (userId) => {
     try {
       // Check profiles table (admin / member)
       const { data: profileData } = await supabase
@@ -48,7 +21,6 @@ export function AuthProvider({ children }) {
       if (profileData) {
         setProfile(profileData);
         setHotel(null);
-        setLoading(false);
         return;
       }
 
@@ -60,7 +32,13 @@ export function AuthProvider({ children }) {
         .single();
 
       if (hotelData) {
-        setProfile({ id: userId, role: 'hotel', full_name: hotelData.contact_person, email: hotelData.email, status: hotelData.status });
+        setProfile({
+          id: userId,
+          role: 'hotel',
+          full_name: hotelData.contact_person,
+          email: hotelData.email,
+          status: hotelData.status,
+        });
         setHotel(hotelData);
       }
     } catch (err) {
@@ -68,7 +46,37 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // 1. Check for existing session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchUserData(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // 2. Listen for auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          // Only re-fetch if profile isn't already loaded for this user
+          // This prevents the duplicate-call race condition
+        } else {
+          setUser(null);
+          setProfile(null);
+          setHotel(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [fetchUserData]);
 
   // Member login: Member ID (e.g. K002098) + password
   const loginMember = async (memberId, password) => {
@@ -81,6 +89,10 @@ export function AuthProvider({ children }) {
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error('Invalid password. Please try again.');
+
+    // Fetch profile data for the newly logged-in user
+    setUser(data.user);
+    await fetchUserData(data.user.id);
     return data;
   };
 
@@ -106,6 +118,9 @@ export function AuthProvider({ children }) {
       throw new Error('Your hotel access has not been approved yet. Please wait for admin approval.');
     }
 
+    // Fetch profile data for the newly logged-in hotel
+    setUser(data.user);
+    await fetchUserData(data.user.id);
     return data;
   };
 
@@ -125,6 +140,9 @@ export function AuthProvider({ children }) {
       throw new Error('You are not authorized as admin.');
     }
 
+    // Fetch profile data for the newly logged-in admin
+    setUser(data.user);
+    await fetchUserData(data.user.id);
     return data;
   };
 

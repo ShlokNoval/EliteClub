@@ -24,6 +24,8 @@ export default function AdminOverview() {
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [errorMsg, setErrorMsg] = useState(null);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -36,6 +38,12 @@ export default function AdminOverview() {
         supabase.from('scans').select('id, created_at, result, card_id, scan_type').order('created_at', { ascending: false }).limit(50),
         supabase.from('bills').select('food_bev_cost, liquor_cost_billed, created_at'),
       ]);
+
+
+      if (profilesRes.error) throw profilesRes.error;
+      if (hotelsRes.error) throw hotelsRes.error;
+      if (scansRes.error) throw scansRes.error;
+      if (billsRes.error) throw billsRes.error;
 
       const members = profilesRes.data || [];
       const hotels = hotelsRes.data || [];
@@ -56,15 +64,17 @@ export default function AdminOverview() {
       // Build recent activity from scans
       setActivity(scans.slice(0, 8).map(s => ({
         id: s.id,
-        message: `QR ${s.card_id} scanned — ${s.result} (${s.scan_type.replace('_', ' ')})`,
+        message: `QR ${s.card_id} scanned — ${s.result} (${(s.scan_type || 'unknown').replace('_', ' ')})`,
         time: new Date(s.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
       })));
     } catch (err) {
       console.error('Error loading admin data:', err);
+      setErrorMsg(err.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
   };
+
 
   const statCards = [
     { icon: Users, label: 'Total Members', value: stats.totalUsers, color: 'text-blue-400', bg: 'bg-blue-400/10' },
@@ -80,6 +90,12 @@ export default function AdminOverview() {
           Admin <span className="text-gold-gradient">Overview</span>
         </h1>
         <p className="text-smoke">Welcome back, Admin. Here's what's happening.</p>
+        
+        {errorMsg && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">
+            <strong>Error loading data:</strong> {errorMsg}
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}

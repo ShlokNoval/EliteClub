@@ -6,7 +6,7 @@ import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/common/Toast';
 import { formatDate } from '../../utils/helpers';
 
@@ -49,16 +49,18 @@ export default function AdminHotels() {
     }
     setSaving(true);
     try {
-      // Create auth user for the hotel
-      const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
-        email: approveTarget.email,
-        password: hotelPassword,
+      // Create auth user via custom secure RPC to bypass email rate limits
+      const { data: newUserId, error: rpcError } = await supabase.rpc('create_hotel_user', {
+        p_email: approveTarget.email,
+        p_password: hotelPassword
       });
-      if (authError) throw authError;
+
+      if (rpcError) throw rpcError;
+      if (!newUserId) throw new Error('Failed to create hotel login.');
 
       // Update hotel record
       await supabase.from('hotels')
-        .update({ status: 'verified', auth_user_id: authData.user.id })
+        .update({ status: 'verified', auth_user_id: newUserId })
         .eq('id', approveTarget.id);
 
       toast.success(`${approveTarget.name} approved! Login: ${approveTarget.email}`);
@@ -66,7 +68,8 @@ export default function AdminHotels() {
       setHotelPassword('');
       fetchHotels();
     } catch (err) {
-      toast.error(err.message);
+      console.error(err);
+      toast.error(err.message || 'Error approving hotel.');
     } finally {
       setSaving(false);
     }

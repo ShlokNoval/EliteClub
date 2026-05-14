@@ -6,7 +6,7 @@ import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/common/Toast';
 import { formatDate, maskPhone, maskEmail } from '../../utils/helpers';
 
@@ -62,18 +62,19 @@ export default function AdminUsers() {
       // Generate a synthetic email if none provided
       const email = newUser.email.trim() || `${newUser.card_id.toLowerCase()}@members.eliteclub.local`;
 
-      // Create auth user with non-persisting client
-      const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
-        email,
-        password: newUser.password,
+      // Create auth user via secure RPC (bypasses email rate limits)
+      const { data: userId, error: rpcError } = await supabase.rpc('create_member_user', {
+        p_email: email,
+        p_password: newUser.password,
       });
-      if (authError) throw authError;
+      if (rpcError) throw rpcError;
+      if (!userId) throw new Error('Failed to create user account.');
 
-      const userId = authData.user.id;
+      const authUserId = userId;
 
       // Create profile
       const { error: profileError } = await supabase.from('profiles').insert({
-        id: userId,
+        id: authUserId,
         email,
         full_name: newUser.full_name.trim(),
         phone: newUser.phone.trim(),
@@ -88,7 +89,7 @@ export default function AdminUsers() {
 
       // Assign the QR card
       await supabase.from('qr_cards')
-        .update({ status: 'assigned', assigned_to: userId, assigned_at: new Date().toISOString() })
+        .update({ status: 'assigned', assigned_to: authUserId, assigned_at: new Date().toISOString() })
         .eq('card_id', newUser.card_id);
 
       toast.success(`User ${newUser.full_name} created! Member ID: ${newUser.card_id}`);
