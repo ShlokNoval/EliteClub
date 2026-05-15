@@ -341,6 +341,11 @@ body::before {
   color: #666666;
 }
 
+option {
+  background-color: #111111;
+  color: #F5E6CC;
+}
+
 /* ═══ Responsive Utilities ═══ */
 @media (max-width: 768px) {
   .membership-card {

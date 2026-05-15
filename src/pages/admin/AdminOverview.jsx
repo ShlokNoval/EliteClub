@@ -64,7 +64,9 @@ export default function AdminOverview() {
       // Build recent activity from scans
       setActivity(scans.slice(0, 8).map(s => ({
         id: s.id,
-        message: `QR ${s.card_id} scanned — ${s.result} (${(s.scan_type || 'unknown').replace('_', ' ')})`,
+        message: s.card_id === 'MANUAL'
+          ? `Admin Manual Override — ${(s.scan_type || 'unknown').replace('_', ' ')}`
+          : `QR ${s.card_id} scanned — ${s.result} (${(s.scan_type || 'unknown').replace('_', ' ')})`,
         time: new Date(s.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
       })));
     } catch (err) {

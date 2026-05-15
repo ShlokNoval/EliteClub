@@ -30,6 +30,10 @@ export default function HotelScanner() {
   const scannerRef = useRef(null);
   const html5QrRef = useRef(null);
 
+  const [otpStep, setOtpStep] = useState(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [activatingUnlimited, setActivatingUnlimited] = useState(false);
+
   // Clean up camera on unmount
   useEffect(() => {
     return () => { stopCamera(); };
@@ -103,20 +107,36 @@ export default function HotelScanner() {
         return;
       }
 
-      // 3. Check for existing visits today
+      // 3. Quota Math (Global Daily Consumption)
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const isUnlimitedToday = member.unlimited_day_used_at && new Date(member.unlimited_day_used_at) >= todayStart;
 
-      const { data: closedToday } = await supabase.from('visits')
-        .select('id')
-        .eq('member_id', member.id)
-        .eq('status', 'closed')
-        .gte('check_in', todayStart.toISOString());
+      if (!isUnlimitedToday) {
+        const { data: billsToday } = await supabase.from('bills')
+          .select('nips_consumed, beers_consumed')
+          .eq('member_id', member.id)
+          .gte('created_at', todayStart.toISOString());
+        
+        let totalNips = 0, totalBeers = 0;
+        if (billsToday) {
+          billsToday.forEach(b => {
+            totalNips += b.nips_consumed || 0;
+            totalBeers += b.beers_consumed || 0;
+          });
+        }
 
-      if (closedToday && closedToday.length > 0) {
-        await logScan(cardId, member.id, 'check_in', 'blocked');
-        setResult({ type: 'blocked', title: 'Already Visited Today', desc: `${member.full_name} has already completed a visit today. Cannot check in again.`, member });
-        setScanning(false);
-        return;
+        const nipLimit = hotel.nip_limit || 4;
+        const beerLimit = hotel.beer_limit || 8;
+        
+        // If quota utilized is >= 1.0 (100%), block check-in
+        const quotaUtilized = (totalNips / nipLimit) + (totalBeers / beerLimit);
+        
+        if (quotaUtilized >= 0.99) { // 0.99 for float safety
+          await logScan(cardId, member.id, 'check_in', 'blocked');
+          setResult({ type: 'blocked', title: 'Quota Exhausted', desc: `${member.full_name} has consumed their daily allowance (${totalNips} Nips, ${totalBeers} Beers) for this venue's limit.`, member });
+          setScanning(false);
+          return;
+        }
       }
 
       // 4. Check for open visit (this would be check-out)
@@ -142,7 +162,27 @@ export default function HotelScanner() {
         return;
       }
 
-      // 5. All clear — Check-in
+      // 5. Check-in Flow (OTP if shareable)
+      if (member.plan === 'shareable') {
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        const expires = new Date(Date.now() + 10 * 60000).toISOString();
+        await supabase.from('profiles').update({ otp_code: code, otp_expires_at: expires }).eq('id', member.id);
+        console.log(`[MVP] OTP for ${member.phone || member.email} is ${code}`);
+        setOtpStep({ member, cardId });
+        setScanning(false);
+        return;
+      } else {
+        await executeCheckIn(member, cardId);
+      }
+    } catch (err) {
+      console.error(err);
+      setResult({ type: 'invalid', title: 'Error', desc: err.message });
+      setScanning(false);
+    }
+  };
+
+  const executeCheckIn = async (member, cardId) => {
+    try {
       const { data: newVisit } = await supabase.from('visits').insert({
         member_id: member.id,
         hotel_id: hotel.id,
@@ -150,16 +190,44 @@ export default function HotelScanner() {
       }).select().single();
 
       await logScan(cardId, member.id, 'check_in', 'valid');
-
-      // Update hotel scan count
       await supabase.from('hotels').update({ scan_count: (hotel.scan_count || 0) + 1 }).eq('id', hotel.id);
 
-      setResult({ type: 'check_in', title: '✓ Checked In', desc: `${member.full_name} has been checked in successfully.`, member, visitId: newVisit?.id });
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const isUnlimitedToday = member.unlimited_day_used_at && new Date(member.unlimited_day_used_at) >= todayStart;
+
+      setResult({ type: 'check_in', title: '✓ Checked In', desc: `${member.full_name} has been checked in successfully.`, member, visitId: newVisit?.id, showUnlimitedBtn: !isUnlimitedToday });
+      setOtpStep(null);
     } catch (err) {
-      console.error(err);
-      setResult({ type: 'invalid', title: 'Error', desc: err.message });
+      toast.error('Failed to complete check-in');
     } finally {
       setScanning(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!otpCode || otpCode.length < 4) return;
+    setScanning(true);
+    const { data } = await supabase.from('profiles').select('otp_code, otp_expires_at').eq('id', otpStep.member.id).single();
+    if (data?.otp_code === otpCode && new Date(data.otp_expires_at) > new Date()) {
+      toast.success('OTP Verified');
+      await executeCheckIn(otpStep.member, otpStep.cardId);
+    } else {
+      toast.error('Invalid or expired OTP');
+      setScanning(false);
+    }
+  };
+
+  const activateUnlimitedDay = async (memberId) => {
+    if (!window.confirm("Activate 1-Day Unlimited for this user? This cannot be undone.")) return;
+    setActivatingUnlimited(true);
+    try {
+      await supabase.from('profiles').update({ unlimited_day_used_at: new Date().toISOString() }).eq('id', memberId);
+      toast.success('Unlimited Day Activated!');
+      setResult(prev => ({ ...prev, showUnlimitedBtn: false, desc: prev.desc + ' (Unlimited Day Active)' }));
+    } catch (err) {
+      toast.error('Failed to activate unlimited day.');
+    } finally {
+      setActivatingUnlimited(false);
     }
   };
 
@@ -269,12 +337,53 @@ export default function HotelScanner() {
                       <div className="flex justify-between"><span className="text-smoke">Expires</span><span className="text-champagne">{formatDate(result.member.expiry_date)}</span></div>
                     </div>
                   )}
+
+                  {result.showUnlimitedBtn && (
+                    <div className="border-t border-white/5 pt-4 mt-4">
+                      <Button variant="gold" size="sm" className="w-full" onClick={() => activateUnlimitedDay(result.member.id)} disabled={activatingUnlimited}>
+                        {activatingUnlimited ? 'Activating...' : 'Activate 1-Day Unlimited'}
+                      </Button>
+                      <p className="text-[10px] text-smoke mt-2">Bypasses all limits for today. Only usable once per membership.</p>
+                    </div>
+                  )}
                 </GlassCard>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {!result && !scanning && (
+          <AnimatePresence mode="wait">
+            {otpStep && !scanning && !result && (
+              <motion.div key="otp" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <GlassCard hover={false} className="border border-gold/20">
+                  <div className="text-center mb-6">
+                    <Lock size={32} className="text-gold mx-auto mb-3" />
+                    <h3 className="font-playfair text-xl font-semibold text-champagne">OTP Verification</h3>
+                    <p className="text-smoke text-sm mt-1">Shareable plan requires OTP to check in.</p>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="text-center text-xs text-champagne-dark p-3 bg-white/5 rounded-lg border border-white/10">
+                      OTP sent to: {otpStep.member.phone || otpStep.member.email || 'Registered Contact'}
+                      <div className="mt-1 text-[10px] text-gold">(MVP Check: View console or admin panel for OTP code)</div>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={otpCode}
+                      onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      className="w-full elite-input rounded-xl px-4 py-3 text-center text-xl tracking-widest font-mono"
+                      placeholder="• • • •"
+                    />
+                    <div className="flex gap-2">
+                      <Button variant="ghost" className="flex-1" onClick={() => setOtpStep(null)}>Cancel</Button>
+                      <Button variant="gold" className="flex-1" onClick={verifyOtp} disabled={otpCode.length !== 4}>Verify</Button>
+                    </div>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {!result && !scanning && !otpStep && (
             <GlassCard hover={false} className="flex flex-col items-center justify-center py-16 text-center">
               <Shield size={48} className="text-gold/20 mb-4" />
               <h3 className="text-champagne font-semibold mb-2">Ready to Scan</h3>

@@ -16,6 +16,7 @@ export default function AdminCards() {
   const [filter, setFilter] = useState('all');
   const [selectedCard, setSelectedCard] = useState(null);
   const [memberInfo, setMemberInfo] = useState(null);
+  const [counts, setCounts] = useState({ total: 0, available: 0, assigned: 0, suspended: 0 });
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 50;
@@ -33,14 +34,25 @@ export default function AdminCards() {
 
     const { data, count } = await query;
     setCards(data || []);
+
+    // Fetch global counts (only needed if search is empty, but we'll fetch always for simplicity)
+    const [availRes, assignRes, suspRes] = await Promise.all([
+      supabase.from('qr_cards').select('id', { count: 'exact', head: true }).eq('status', 'available'),
+      supabase.from('qr_cards').select('id', { count: 'exact', head: true }).eq('status', 'assigned'),
+      supabase.from('qr_cards').select('id', { count: 'exact', head: true }).eq('status', 'suspended')
+    ]);
+
+    setCounts({
+      total: count || 0,
+      available: availRes.count || 0,
+      assigned: assignRes.count || 0,
+      suspended: suspRes.count || 0,
+    });
+
     setLoading(false);
   };
 
   const handleSearch = () => { setPage(0); fetchCards(); };
-
-  const counts = {
-    total: cards.length,
-  };
 
   const selectCard = (card) => {
     setSelectedCard(card);
@@ -62,7 +74,7 @@ export default function AdminCards() {
           { label: 'Suspended', status: 'suspended', color: 'text-red-400' },
         ].map((s, i) => (
           <GlassCard key={i} delay={i * 0.1} className="p-4 text-center">
-            <p className={`text-2xl font-bold ${s.color}`}>{cards.filter(c => c.status === s.status).length}</p>
+            <p className={`text-2xl font-bold ${s.color}`}>{counts[s.status]}</p>
             <p className="text-smoke text-xs">{s.label}</p>
           </GlassCard>
         ))}
