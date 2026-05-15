@@ -33,3 +33,26 @@ CREATE POLICY "visits_admin_all" ON visits FOR ALL
 DROP POLICY IF EXISTS "scans_admin_all" ON scans;
 CREATE POLICY "scans_admin_all" ON scans FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+
+-- 6. Member Access to Verified Hotels
+DROP POLICY IF EXISTS "hotels_verified_select" ON hotels;
+CREATE POLICY "hotels_verified_select" ON hotels FOR SELECT
+  USING (status = 'verified');
+
+-- 7. Admin Password Reset RPC
+CREATE OR REPLACE FUNCTION admin_reset_password(p_email text, p_new_password text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Check if caller is admin
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin') THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  UPDATE auth.users
+  SET encrypted_password = crypt(p_new_password, gen_salt('bf'))
+  WHERE email = p_email;
+END;
+$$;

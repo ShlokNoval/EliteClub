@@ -20,16 +20,21 @@ export default function HotelOverview() {
     try {
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
 
-      const [scansRes, recentRes] = await Promise.all([
+      const [scansRes, recentRes, visitsRes] = await Promise.all([
         supabase.from('scans').select('result, created_at').eq('hotel_id', hotel.id),
         supabase.from('scans').select('*, profiles:member_id(full_name)').eq('hotel_id', hotel.id).order('created_at', { ascending: false }).limit(10),
+        supabase.from('visits').select('member_id, created_at').eq('hotel_id', hotel.id)
       ]);
 
       const scans = scansRes.data || [];
       const todayScans = scans.filter(s => new Date(s.created_at) >= todayStart);
+      
+      const visits = visitsRes.data || [];
+      const todayVisits = visits.filter(v => new Date(v.created_at) >= todayStart);
+      const uniqueVisitors = new Set(todayVisits.map(v => v.member_id)).size;
 
       setStats({
-        today: todayScans.length,
+        uniqueVisitors: uniqueVisitors,
         valid: todayScans.filter(s => s.result === 'valid').length,
         invalid: todayScans.filter(s => s.result === 'invalid' || s.result === 'not_found').length,
         expired: todayScans.filter(s => s.result === 'expired').length,
@@ -56,10 +61,10 @@ export default function HotelOverview() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { icon: ScanLine, label: "Today's Scans", value: stats.today, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-          { icon: CheckCircle2, label: 'Valid', value: stats.valid, color: 'text-green-400', bg: 'bg-green-400/10' },
-          { icon: XCircle, label: 'Invalid', value: stats.invalid, color: 'text-red-400', bg: 'bg-red-400/10' },
-          { icon: AlertTriangle, label: 'Expired', value: stats.expired, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+          { icon: ScanLine, label: "Unique Visitors (Today)", value: stats.uniqueVisitors, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+          { icon: CheckCircle2, label: 'Valid Scans', value: stats.valid, color: 'text-green-400', bg: 'bg-green-400/10' },
+          { icon: XCircle, label: 'Invalid Scans', value: stats.invalid, color: 'text-red-400', bg: 'bg-red-400/10' },
+          { icon: AlertTriangle, label: 'Expired Scans', value: stats.expired, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
         ].map((s, i) => (
           <GlassCard key={i} delay={i * 0.1} className="p-5">
             <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}><s.icon size={20} className={s.color} /></div>

@@ -126,6 +126,53 @@ export default function AdminUsers() {
     }
   };
 
+  const handleResetPassword = async () => {
+    const newPass = prompt("Enter new password for " + editForm.full_name);
+    if (!newPass) return;
+    try {
+      const { error } = await supabase.rpc('admin_reset_password', {
+        p_email: editForm.email,
+        p_new_password: newPass
+      });
+      if (error) throw error;
+      toast.success("Password reset successfully!");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleReassignCard = async () => {
+    if (!window.confirm("This will permanently mark the current card as SUSPENDED and assign a new available card. Continue?")) return;
+    
+    const nextCard = cards.find(c => c.status === 'available');
+    if (!nextCard) {
+      toast.error("No available cards in inventory!");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Suspend old card
+      if (editForm.card_id) {
+        await supabase.from('qr_cards').update({ status: 'suspended', assigned_to: null }).eq('card_id', editForm.card_id);
+      }
+      
+      // Assign new card
+      await supabase.from('qr_cards').update({ status: 'assigned', assigned_to: editForm.id, assigned_at: new Date().toISOString() }).eq('card_id', nextCard.card_id);
+
+      // Update profile
+      await supabase.from('profiles').update({ card_id: nextCard.card_id, member_id: nextCard.card_id }).eq('id', editForm.id);
+
+      toast.success(`New card ${nextCard.card_id} assigned successfully!`);
+      setEditModal(false);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <PageTransition>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -293,11 +340,21 @@ export default function AdminUsers() {
               </select>
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-champagne-dark">Member ID</label>
-            <p className="text-gold font-mono text-sm">{editForm.member_id || 'Not assigned'}</p>
+          <div className="flex items-center justify-between border-t border-white/5 pt-4">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-champagne-dark">Member ID / Card</label>
+              <p className="text-gold font-mono text-sm">{editForm.member_id || 'Not assigned'}</p>
+            </div>
+            <button onClick={handleReassignCard} className="text-xs text-red-400 hover:text-red-300 border border-red-400/20 bg-red-400/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+              Mark Lost & Reassign
+            </button>
           </div>
-          <div className="flex gap-3 pt-4">
+          <div className="flex justify-between items-center pb-2">
+            <button onClick={handleResetPassword} className="text-xs text-smoke hover:text-champagne transition-colors cursor-pointer flex items-center gap-1">
+              <Lock size={12} /> Reset Password
+            </button>
+          </div>
+          <div className="flex gap-3 pt-2">
             <Button variant="gold" className="flex-1" onClick={handleEditUser} disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>

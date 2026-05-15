@@ -107,6 +107,23 @@ BEGIN
 END;
 $$;
 
+-- Admin password reset
+CREATE OR REPLACE FUNCTION admin_reset_password(p_email text, p_new_password text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin') THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  UPDATE auth.users
+  SET encrypted_password = crypt(p_new_password, gen_salt('bf'))
+  WHERE email = p_email;
+END;
+$$;
+
 -- Auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -162,6 +179,9 @@ CREATE POLICY "hotels_anon_insert" ON hotels FOR INSERT
 
 CREATE POLICY "hotels_own_select" ON hotels FOR SELECT
   USING (auth_user_id = auth.uid());
+
+CREATE POLICY "hotels_verified_select" ON hotels FOR SELECT
+  USING (status = 'verified');
 
 -- SCANS policies
 CREATE POLICY "scans_admin_select" ON scans FOR SELECT
