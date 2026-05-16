@@ -238,7 +238,7 @@ VALUES (
   'active'
 );
 
--- ═══ Generate 1111 QR Cards (K002098 to K003208) ═══
+-- ═══ Generate 300 QR Cards (K002098 to K002397) ═══
 INSERT INTO qr_cards (card_id, status)
 SELECT 'K' || LPAD((2098 + g)::text, 6, '0'), 'available'
-FROM generate_series(0, 1110) AS g;
+FROM generate_series(0, 299) AS g;

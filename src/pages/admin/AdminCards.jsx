@@ -63,7 +63,7 @@ export default function AdminCards() {
     <PageTransition>
       <div className="mb-8">
         <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">QR Card <span className="text-gold-gradient">Inventory</span></h1>
-        <p className="text-smoke">Manage 1111+ QR cards — view status, assignments, and card previews.</p>
+        <p className="text-smoke">Manage 300 QR cards — view status, assignments, and card previews.</p>
       </div>
 
       {/* Stats */}

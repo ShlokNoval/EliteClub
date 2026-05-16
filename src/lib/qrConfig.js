@@ -5,7 +5,7 @@
 
 // For development: uses current browser origin (localhost:5173)
 // For production: set your real domain here
-const PRODUCTION_DOMAIN = ''; // e.g. 'https://theeliteclub.in'
+const PRODUCTION_DOMAIN = 'https://eliteclubcsn.in';
 
 /**
  * Returns the full URL for a QR card scan page.
