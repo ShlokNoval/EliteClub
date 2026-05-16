@@ -1,4 +1,4 @@
-# The Elite Club
+# The Elite Club.
 
 The Elite Club is Chh. Sambhajinagar's most exclusive membership-based liquor club, offering premium experiences across 12+ partner venues.
 
