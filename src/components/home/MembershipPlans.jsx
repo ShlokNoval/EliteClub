@@ -4,7 +4,7 @@ import { Check, Sparkles, Crown } from 'lucide-react';
 import SectionHeading from '../common/SectionHeading';
 import Button from '../common/Button';
 import { membershipPlans } from '../../data/mockData';
-import { Link } from 'react-router-dom';
+// v2: Buttons scroll to contact section instead of login
 
 const featureVariants = {
   hidden: {},
