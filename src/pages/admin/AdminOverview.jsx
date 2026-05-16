@@ -35,7 +35,7 @@ export default function AdminOverview() {
       const [profilesRes, hotelsRes, scansRes, billsRes] = await Promise.all([
         supabase.from('profiles').select('id, role, status').eq('role', 'member'),
         supabase.from('hotels').select('id, status'),
-        supabase.from('scans').select('id, created_at, result, card_id, scan_type').order('created_at', { ascending: false }).limit(50),
+        supabase.from('scans').select('id, created_at, result, card_id, scan_type').order('created_at', { ascending: false }).limit(1000),
         supabase.from('bills').select('food_bev_cost, liquor_cost_billed, created_at'),
       ]);
 
@@ -62,7 +62,7 @@ export default function AdminOverview() {
       });
 
       // Build recent activity from scans
-      setActivity(scans.slice(0, 8).map(s => ({
+      setActivity(scans.map(s => ({
         id: s.id,
         message: s.card_id === 'MANUAL'
           ? `Admin Manual Override — ${(s.scan_type || 'unknown').replace('_', ' ')}`
@@ -130,7 +130,7 @@ export default function AdminOverview() {
         ) : activity.length === 0 ? (
           <p className="text-smoke text-sm py-8 text-center">No activity yet. Scans will appear here.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
             {activity.map((item, i) => (
               <motion.div
                 key={item.id}

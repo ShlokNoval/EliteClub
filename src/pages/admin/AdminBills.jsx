@@ -34,7 +34,7 @@ export default function AdminBills() {
 
   const handleExport = () => {
     exportToCSV(filtered.map(b => ({
-      Date: formatDate(b.created_at),
+      Date: ' ' + new Date(b.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
       Member: b.profiles?.full_name || '',
       Member_ID: b.profiles?.member_id || '',
       Hotel: b.hotels?.name || '',
