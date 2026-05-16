@@ -135,6 +135,7 @@ export const partnerVenues = [
   { id: 10, name: 'Hotel Ambika Executive', type: 'Hotel & Bar', status: 'verified', image: '/hotels/Hotel Ambika.png', address: 'Aurangabad - Solapur Hwy, Zalta, Maharashtra 431007' },
   { id: 11, name: 'Hotel Madhuram', type: 'Hotel & Restaurant', status: 'verified', image: '/hotels/Hotel Madhuram.png', address: 'Near Hindustan Petroleum Corporation, Bypass Rd, Sawangi, Maharashtra 431008' },
   { id: 12, name: 'Swara Executive Restaurant & Bar', type: 'Restaurant & Bar', status: 'verified', image: '/hotels/Swara Executive.png', address: 'Kamgar Chowk, Mayanagar Colony, N 2, Cidco, Chhatrapati Sambhajinagar, Maharashtra 431003' },
+  { id: 13, name: 'Kohinoor Plaza', type: 'Hotel & Restaurant', status: 'verified', image: '/hotels/Kohinoor Plaza.png', address: 'Nirala Bazar Rd, opposite M.P. LOW COLLEGE, Samarth Nagar, Chhatrapati Sambhajinagar, Maharashtra 431001' },
 ];
 
 export const faqData = [
