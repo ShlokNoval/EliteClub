@@ -241,7 +241,6 @@ body::before {
 
 /* ═══ Membership Card ═══ */
 .membership-card {
-  aspect-ratio: 1.586 / 1;
   background: linear-gradient(145deg, #1A1A1A 0%, #111111 50%, #0A0A0A 100%);
   border: 1px solid rgba(201, 169, 78, 0.25);
   box-shadow:
