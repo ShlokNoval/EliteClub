@@ -40,15 +40,26 @@ export default function UserDashboard() {
       const bills = billsRes.data || [];
       const hotels = hotelsRes.data || [];
 
-      setVenues(hotels);
-
       const todaysBills = bills.filter(b => new Date(b.created_at) >= todayStart);
       const nipsToday = todaysBills.reduce((s, b) => s + (b.nips_consumed || 0), 0);
       const beersToday = todaysBills.reduce((s, b) => s + (b.beers_consumed || 0), 0);
 
+      const isUnlimitedToday = profile.unlimited_day_used_at && new Date(profile.unlimited_day_used_at) >= todayStart;
+
+      // Dynamically filter venues based on consumed quota
+      if (isUnlimitedToday) {
+        setVenues(hotels);
+      } else {
+        const availableVenues = hotels.filter(v => {
+          const quota = (nipsToday / (v.nip_limit || 4)) + (beersToday / (v.beer_limit || 8));
+          return quota < 0.99; // Hide venue if user has exhausted its specific limit
+        });
+        setVenues(availableVenues);
+      }
+
       setStats({
         visits: visits.length,
-        totalSpent: bills.reduce((s, b) => s + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0),
+        totalSpent: bills.reduce((s, b) => s + Number(b.liquor_cost_billed || 0), 0),
         totalSaved: bills.reduce((s, b) => s + Number(b.savings || 0), 0),
         nipsToday,
         beersToday
@@ -192,6 +203,17 @@ export default function UserDashboard() {
                   <div className="flex justify-between"><span className="text-smoke">Phone</span><span className="text-champagne">{profile.phone || '—'}</span></div>
                   <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold font-medium">{plan?.name || '—'}</span></div>
                   <div className="flex justify-between"><span className="text-smoke">Member Since</span><span className="text-champagne">{formatDate(profile.join_date)}</span></div>
+                  <div className="flex flex-col gap-1 border-t border-white/5 pt-3 mt-3">
+                    <div className="flex justify-between">
+                      <span className="text-smoke flex items-center gap-1"><Wine size={12}/> 1-Day Unlimited</span>
+                      <span className={profile.unlimited_day_used_at ? "text-ash" : "text-green-400 font-medium"}>
+                        {profile.unlimited_day_used_at ? `Used on ${formatDate(profile.unlimited_day_used_at)}` : "Available Today"}
+                      </span>
+                    </div>
+                    {profile.unlimited_day_used_at && (
+                      <span className="text-[10px] text-smoke text-right">Available again upon next renewal</span>
+                    )}
+                  </div>
                 </div>
               </GlassCard>
 
