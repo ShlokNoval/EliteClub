@@ -66,6 +66,10 @@ export default function HotelScanner() {
             cardId = cardId.split('/scan/').pop();
           }
           
+          // Aggressively clean: remove any trailing slashes, spaces, or invisible characters, and uppercase
+          cardId = cardId.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+          
+          console.log('Scanned Raw:', decodedText, 'Parsed:', cardId);
           processScan(cardId);
         },
         () => {} // ignore errors during scanning
