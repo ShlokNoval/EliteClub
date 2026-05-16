@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, Upload, IndianRupee, Camera } from 'lucide-react';
+import { Receipt, Upload, IndianRupee, Camera, Eye } from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Button from '../../components/common/Button';
@@ -200,7 +200,14 @@ export default function HotelBillUpload() {
               {recentBills.map(b => (
                 <div key={b.id} className="pb-4 border-b border-white/5 last:border-0">
                   <div className="flex justify-between items-start mb-2">
-                    <p className="text-champagne text-sm font-medium">{b.profiles?.full_name || '—'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-champagne text-sm font-medium">{b.profiles?.full_name || '—'}</p>
+                      {b.bill_image_url && (
+                        <a href={b.bill_image_url} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light transition-colors" title="View Bill Image">
+                          <Eye size={14} />
+                        </a>
+                      )}
+                    </div>
                     <p className="text-ash text-xs">{new Date(b.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-xs">
