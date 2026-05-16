@@ -139,10 +139,8 @@ export default function HotelScanner() {
         const nipLimit = hotel.nip_limit || 4;
         const beerLimit = hotel.beer_limit || 8;
         
-        // If quota utilized is >= 1.0 (100%), block check-in
-        const quotaUtilized = (totalNips / nipLimit) + (totalBeers / beerLimit);
-        
-        if (quotaUtilized >= 0.99) { // 0.99 for float safety
+        // If both quotas are completely exhausted, block check-in
+        if (totalNips >= nipLimit && totalBeers >= beerLimit) {
           await logScan(cardId, member.id, 'check_in', 'blocked');
           setResult({ type: 'blocked', title: 'Quota Exhausted', desc: `${member.full_name} has consumed their daily allowance (${totalNips} Nips, ${totalBeers} Beers) for this venue's limit.`, member });
           setScanning(false);

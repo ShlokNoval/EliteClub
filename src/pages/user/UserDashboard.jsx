@@ -51,8 +51,10 @@ export default function UserDashboard() {
         setVenues(hotels);
       } else {
         const availableVenues = hotels.filter(v => {
-          const quota = (nipsToday / (v.nip_limit || 4)) + (beersToday / (v.beer_limit || 8));
-          return quota < 0.99; // Hide venue if user has exhausted its specific limit
+          // A venue is available if the user hasn't exhausted BOTH the nip limit AND the beer limit
+          const hasNipsLeft = nipsToday < (v.nip_limit || 4);
+          const hasBeersLeft = beersToday < (v.beer_limit || 8);
+          return hasNipsLeft || hasBeersLeft;
         });
         setVenues(availableVenues);
       }
