@@ -20,12 +20,12 @@ export const membershipPlans = [
     subtitle: 'The Personal Privilege',
     duration: '30 Days',
     mrpDays: 29,
-    freeDays: 1,
+    unlimitedDays: 1,
     price: 4000,
     perDayValue: '₹133/day',
     features: [
       '29 days liquor at MRP + VAT',
-      '1 day unlimited liquor — FREE',
+      '1 day with NO consumption limits',
       'Access to all partner venues',
       'Digital membership card with QR',
       'Priority seating at events',
@@ -40,13 +40,13 @@ export const membershipPlans = [
     subtitle: 'The Shared Experience',
     duration: '30 Days',
     mrpDays: 29,
-    freeDays: 1,
+    unlimitedDays: 1,
     price: 6000,
     perDayValue: '₹200/day',
     features: [
       'Shareable with 1 other person via OTP',
       '29 days liquor at MRP + VAT',
-      '1 day unlimited liquor — FREE',
+      '1 day with NO consumption limits',
       'Access to all partner venues',
       'Digital membership card with QR',
       'VIP priority at all venues',
@@ -73,8 +73,8 @@ export const benefits = [
   {
     id: 3,
     icon: 'Wine',
-    title: 'Free Unlimited Day',
-    description: 'One day of unlimited liquor completely free with every membership cycle.',
+    title: '1-Day Unlimited Quota',
+    description: 'One day where venue consumption limits are entirely lifted, letting you enjoy without quotas.',
   },
   {
     id: 4,
@@ -143,8 +143,8 @@ export const faqData = [
     answer: 'The Elite Club is an exclusive membership-based liquor club in Chh. Sambhajinagar. Members enjoy premium benefits including MRP+VAT pricing and free unlimited liquor days across 12+ partner venues.',
   },
   {
-    question: 'How does the free unlimited liquor day work?',
-    answer: 'Based on your plan, you get 1 full day of unlimited liquor at any partner venue at no extra cost. Dainik members get this once in 30 days, and Decka members get it once in 10 days.',
+    question: 'How does the unlimited quota day work?',
+    answer: 'Based on your plan, you get 1 full day where venue consumption limits (nips/beers) are completely lifted. You will still be billed at MRP+VAT, but there is no maximum limit to what you can order on that day.',
   },
   {
     question: 'Can I use my membership at any venue?',

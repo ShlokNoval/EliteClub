@@ -90,7 +90,7 @@ function MembershipCard({ plan, i }) {
             <span className={`text-sm font-semibold tracking-[0.15em] uppercase ${plan.popular ? 'text-burgundy-light' : 'text-gold'}`}>{plan.subtitle}</span>
           </div>
           <h3 className="font-playfair text-3xl font-bold text-champagne mb-2">{plan.name}</h3>
-          <p className="text-smoke text-sm">{plan.duration} • {plan.mrpDays} days MRP + {plan.freeDays} day FREE</p>
+          <p className="text-smoke text-sm">{plan.duration} • {plan.mrpDays} days normal quota + {plan.unlimitedDays} day unlimited</p>
         </div>
 
         <div className="mb-8 flex items-end gap-2">
