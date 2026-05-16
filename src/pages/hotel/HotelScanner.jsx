@@ -56,10 +56,17 @@ export default function HotelScanner() {
 
       await scanner.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { fps: 15, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
           stopCamera();
-          processScan(decodedText.trim());
+          
+          let cardId = decodedText.trim();
+          // If the QR code contains the full scan URL, extract just the ID (e.g. K002098)
+          if (cardId.includes('/scan/')) {
+            cardId = cardId.split('/scan/').pop();
+          }
+          
+          processScan(cardId);
         },
         () => {} // ignore errors during scanning
       );
