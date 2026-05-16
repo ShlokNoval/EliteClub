@@ -125,18 +125,16 @@ export const howItWorks = [
 ];
 
 export const partnerVenues = [
-  { id: 1, name: 'Elevate Bar', type: 'Bar & Lounge', status: 'verified' },
-  { id: 2, name: 'Spree', type: 'Restaurant & Bar', status: 'verified' },
-  { id: 3, name: 'Patiala Peg Kitchen & Bar', type: 'Kitchen & Bar', status: 'verified' },
-  { id: 4, name: 'The Hangover', type: 'Bar & Lounge', status: 'verified' },
-  { id: 5, name: 'Abhinandan Rooftop Restaurant & Bar', type: 'Rooftop Restaurant', status: 'verified' },
-  { id: 6, name: 'Tokeo Vintage Sky Lounge', type: 'Club & Kitchen', status: 'verified' },
-  { id: 7, name: 'Hotel Balbeer Family Restro & Bar', type: 'Restaurant & Bar', status: 'verified' },
-  { id: 8, name: 'The Maple Restaurant & Bar', type: 'Restaurant & Bar', status: 'verified' },
-  { id: 9, name: 'Silver Oak', type: 'Restaurant & Bar', status: 'verified' },
-  { id: 10, name: 'Hotel Ambika Executive', type: 'Hotel & Bar', status: 'verified' },
-  { id: 11, name: 'Hotel Madhuram', type: 'Hotel & Restaurant', status: 'verified' },
-  { id: 12, name: 'Swara Executive Restaurant & Bar', type: 'Restaurant & Bar', status: 'verified' },
+  { id: 3, name: 'Patiala Peg Kitchen & Bar', type: 'Kitchen & Bar', status: 'verified', image: '/hotels/Patiala Peg.jpeg', address: 'Meera complex, Above HDFC Bank, Shivaji Nagar Rd, Sutgirni Chowk, Chhatrapati Sambhajinagar, Maharashtra 431009' },
+  { id: 4, name: 'The Hangover', type: 'Bar & Lounge', status: 'verified', image: '/hotels/The Hangover.jpeg', address: 'Beed Bypass Rd, Mukundwadi, Chhatrapati Sambhajinagar, Maharashtra 431001' },
+  { id: 5, name: 'Abhinandan Rooftop Restaurant & Bar', type: 'Rooftop Restaurant', status: 'verified', image: '/hotels/Abhinandan Rooftop.png', address: 'Jalna Rd, above MI Service Center, Seven Hills, Town Center, M G M, Chhatrapati Sambhajinagar, Maharashtra 431009' },
+  { id: 6, name: 'Tokeo Vintage Sky Lounge', type: 'Club & Kitchen', status: 'verified', image: '/hotels/Tokeyo Lounge.png', address: '3rd Floor, Golden City Center, beside Prozon Mall, MIDC Industrial Area, Chilkalthana, Chhatrapati Sambhajinagar, Maharashtra 431006' },
+  { id: 7, name: 'Hotel Balbeer Family Restro & Bar', type: 'Restaurant & Bar', status: 'verified', image: '/hotels/Hotel Balbeer.jpg.jpeg', address: 'Shendra, Aurangabad, SH-30, Nagpur Aurangabad Mumbai Highway, Aurangabad, Chhatrapati Sambhajinagar, Maharashtra 431154' },
+  { id: 8, name: 'The Maple Restaurant & Bar', type: 'Restaurant & Bar', status: 'verified', image: '/hotels/The Maple.png', address: 'gut no 40, t_point, paithan, link road, waluj, Kanchanwadi, Golwadi, Maharashtra 431001' },
+  { id: 9, name: 'Silver Oak', type: 'Restaurant & Bar', status: 'verified', image: '/hotels/Silver Oak.png', address: 'Plot No. X - 34, Shendra Five Star M.I.D.C., Area, Kubhephal, Maharashtra 431154' },
+  { id: 10, name: 'Hotel Ambika Executive', type: 'Hotel & Bar', status: 'verified', image: '/hotels/Hotel Ambika.png', address: 'Aurangabad - Solapur Hwy, Zalta, Maharashtra 431007' },
+  { id: 11, name: 'Hotel Madhuram', type: 'Hotel & Restaurant', status: 'verified', image: '/hotels/Hotel Madhuram.png', address: 'Near Hindustan Petroleum Corporation, Bypass Rd, Sawangi, Maharashtra 431008' },
+  { id: 12, name: 'Swara Executive Restaurant & Bar', type: 'Restaurant & Bar', status: 'verified', image: '/hotels/Swara Executive.png', address: 'Kamgar Chowk, Mayanagar Colony, N 2, Cidco, Chhatrapati Sambhajinagar, Maharashtra 431003' },
 ];
 
 export const faqData = [
