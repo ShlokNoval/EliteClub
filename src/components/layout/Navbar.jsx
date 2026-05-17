@@ -40,7 +40,7 @@ export default function Navbar() {
   return (
     <>
       <motion.nav
-        className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-white/5"
+        className="fixed top-0 left-0 right-0 z-50 pt-4"
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
@@ -57,8 +57,8 @@ export default function Navbar() {
               />
             </Link>
 
-            {/* Desktop nav links — pure transparent, no background */}
-            <div className="hidden lg:flex items-center gap-10">
+            {/* Desktop nav links — floating glass pill */}
+            <div className="hidden lg:flex items-center gap-8 px-8 py-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
               {navLinks.map((link) => (
                 <a
                   key={link.label}
@@ -92,7 +92,7 @@ export default function Navbar() {
             {/* Mobile toggle */}
             <button
               onClick={() => setIsMobileOpen(!isMobileOpen)}
-              className="lg:hidden p-2 text-champagne hover:text-gold transition-colors"
+              className="lg:hidden p-2 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-champagne hover:text-gold transition-colors"
               aria-label={isMobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMobileOpen}
             >
