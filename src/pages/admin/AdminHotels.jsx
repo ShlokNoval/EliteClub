@@ -20,6 +20,9 @@ export default function AdminHotels() {
   const [hotelPassword, setHotelPassword] = useState('');
   const [quotas, setQuotas] = useState({ nip_limit: 4, beer_limit: 8 });
   const [editModal, setEditModal] = useState(false);
+  const [activeVisits, setActiveVisits] = useState([]);
+  const [visitsModal, setVisitsModal] = useState(false);
+  const [selectedHotelVisits, setSelectedHotelVisits] = useState(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
@@ -27,8 +30,12 @@ export default function AdminHotels() {
   useEffect(() => { fetchHotels(); }, []);
 
   const fetchHotels = async () => {
-    const { data } = await supabase.from('hotels').select('*').order('created_at', { ascending: false });
-    setHotels(data || []);
+    const [{ data: hData }, { data: vData }] = await Promise.all([
+      supabase.from('hotels').select('*').order('created_at', { ascending: false }),
+      supabase.from('visits').select('id, check_in, hotel_id, profiles(full_name, member_id)').eq('status', 'open').order('check_in', { ascending: false })
+    ]);
+    setHotels(hData || []);
+    setActiveVisits(vData || []);
     setLoading(false);
   };
 
@@ -160,15 +167,22 @@ export default function AdminHotels() {
                 <div className="flex justify-between"><span className="text-smoke">Phone</span><span className="text-champagne-dark">{h.phone}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Location</span><span className="text-champagne-dark">{h.location || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Quotas</span><span className="text-champagne-dark">{h.nip_limit} Nips / {h.beer_limit} Beers</span></div>
-                <div className="flex justify-between"><span className="text-smoke">Scans</span><span className="text-champagne-dark font-mono">{h.scan_count}</span></div>
-                <div className="flex justify-between"><span className="text-smoke">Applied</span><span className="text-champagne-dark">{formatDate(h.created_at)}</span></div>
+                <div className="flex justify-between"><span className="text-smoke">Total Scans</span><span className="text-champagne-dark font-mono">{h.scan_count}</span></div>
+                {h.status === 'verified' && (
+                  <div className="flex justify-between"><span className="text-smoke">Live Check-ins</span><span className="text-green-400 font-mono font-bold">{activeVisits.filter(v => v.hotel_id === h.id).length} Active</span></div>
+                )}
               </div>
               <div className="flex gap-2 pt-3 border-t border-white/5">
                 {h.status === 'pending' && <>
                   <Button variant="gold" size="sm" className="flex-1" onClick={() => { setApproveTarget(h); setApproveModal(true); }}>Approve</Button>
                   <Button variant="danger" size="sm" className="flex-1" onClick={() => handleReject(h)}>Reject</Button>
                 </>}
-                {h.status === 'verified' && <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setSelected(h); setQuotas({ nip_limit: h.nip_limit || 4, beer_limit: h.beer_limit || 8 }); setEditModal(true); }}>Edit Quotas</Button>}
+                {h.status === 'verified' && (
+                  <>
+                    <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setSelected(h); setQuotas({ nip_limit: h.nip_limit || 4, beer_limit: h.beer_limit || 8 }); setEditModal(true); }}>Quotas</Button>
+                    <Button variant="gold" size="sm" className="flex-1" onClick={() => { setSelectedHotelVisits(h); setVisitsModal(true); }}>View Members</Button>
+                  </>
+                )}
                 {h.status === 'rejected' && <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setApproveTarget(h); setQuotas({ nip_limit: 4, beer_limit: 8 }); setApproveModal(true); }}>Review & Approve</Button>}
               </div>
             </GlassCard>
@@ -234,6 +248,37 @@ export default function AdminHotels() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Live Check-ins Modal */}
+      <Modal isOpen={visitsModal} onClose={() => { setVisitsModal(false); setSelectedHotelVisits(null); }} title={selectedHotelVisits ? `Live Check-ins: ${selectedHotelVisits.name}` : ''} size="lg">
+        <div className="space-y-4">
+          <p className="text-smoke text-sm">
+            Elite Members currently verified and checked into this venue.
+          </p>
+          {selectedHotelVisits && activeVisits.filter(v => v.hotel_id === selectedHotelVisits.id).length === 0 ? (
+            <div className="text-center py-8 border border-white/10 rounded-xl bg-black/20">
+              <p className="text-smoke">No members are currently checked in here.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+              {selectedHotelVisits && activeVisits.filter(v => v.hotel_id === selectedHotelVisits.id).map((visit) => (
+                <div key={visit.id} className="p-4 rounded-xl border border-gold/15 bg-gold/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-champagne font-semibold">{visit.profiles?.full_name || 'Unknown Member'}</h4>
+                    <p className="text-gold text-xs font-mono mt-0.5">{visit.profiles?.member_id || 'N/A'}</p>
+                  </div>
+                  <div className="sm:text-right">
+                    <p className="text-smoke text-xs mt-1 flex items-center gap-1.5 sm:justify-end">
+                      <Clock size={12} className="text-gold" />
+                      Checked in: {formatDate(visit.check_in)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </Modal>
     </PageTransition>
   );
