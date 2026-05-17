@@ -21,6 +21,7 @@ export default function AdminHotels() {
   const [quotas, setQuotas] = useState({ nip_limit: 4, beer_limit: 8 });
   const [editModal, setEditModal] = useState(false);
   const [activeVisits, setActiveVisits] = useState([]);
+  const [todayScans, setTodayScans] = useState([]);
   const [visitsModal, setVisitsModal] = useState(false);
   const [selectedHotelVisits, setSelectedHotelVisits] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -30,12 +31,17 @@ export default function AdminHotels() {
   useEffect(() => { fetchHotels(); }, []);
 
   const fetchHotels = async () => {
-    const [{ data: hData }, { data: vData }] = await Promise.all([
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [{ data: hData }, { data: vData }, { data: sData }] = await Promise.all([
       supabase.from('hotels').select('*').order('created_at', { ascending: false }),
-      supabase.from('visits').select('id, check_in, hotel_id, profiles(full_name, member_id)').eq('status', 'open').order('check_in', { ascending: false })
+      supabase.from('visits').select('id, check_in, hotel_id, profiles(full_name, member_id)').eq('status', 'open').order('check_in', { ascending: false }),
+      supabase.from('scans').select('hotel_id, id').gte('created_at', todayStart.toISOString())
     ]);
     setHotels(hData || []);
     setActiveVisits(vData || []);
+    setTodayScans(sData || []);
     setLoading(false);
   };
 
@@ -167,7 +173,7 @@ export default function AdminHotels() {
                 <div className="flex justify-between"><span className="text-smoke">Phone</span><span className="text-champagne-dark">{h.phone}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Location</span><span className="text-champagne-dark">{h.location || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Quotas</span><span className="text-champagne-dark">{h.nip_limit} Nips / {h.beer_limit} Beers</span></div>
-                <div className="flex justify-between"><span className="text-smoke">Total Scans</span><span className="text-champagne-dark font-mono">{h.scan_count}</span></div>
+                <div className="flex justify-between"><span className="text-smoke">Today's Scans</span><span className="text-champagne-dark font-mono">{todayScans.filter(s => s.hotel_id === h.id).length}</span></div>
                 {h.status === 'verified' && (
                   <div className="flex justify-between"><span className="text-smoke">Live Check-ins</span><span className="text-green-400 font-mono font-bold">{activeVisits.filter(v => v.hotel_id === h.id).length} Active</span></div>
                 )}
