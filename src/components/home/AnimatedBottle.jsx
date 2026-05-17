@@ -171,9 +171,17 @@ export default function AnimatedBottle({ membershipRef, isMobile = false }) {
       // ── In Hero or above Membership ──
       const maxScale = isMobile ? 0.28 : 0.55;
       s = maxScale;
-      y = isMobile ? 2.0 - (h * 2.5) : 0.3 - (h * 1.3);
-      x = lp(isMobile ? 2.5 : 4.0, isMobile ? 2.5 : 0, ei(h)); // Stay top-right on mobile
-      rx = lp(0, Math.PI * 4, ei(h)); 
+      y = isMobile ? 2.0 - (h * 3.5) : 0.3 - (h * 1.3); // Travel further down on mobile
+      
+      if (isMobile) {
+        // Zig-zag 3.5 times across the screen
+        x = Math.sin(h * Math.PI * 7) * 1.6;
+        rx = h * Math.PI * 12; // Extra rolling for dynamism
+        ry = Math.cos(h * Math.PI * 7) * 0.4; // Tilt into the curves
+      } else {
+        x = lp(4.0, 0, ei(h));
+        rx = lp(0, Math.PI * 4, ei(h)); 
+      }
       
       // Cap fly-off physics
       if (h > 0.05) {
