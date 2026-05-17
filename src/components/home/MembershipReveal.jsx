@@ -174,7 +174,7 @@ export default function MembershipReveal({ sectionRef }) {
           {/* Heading — visible only during bottle descent/dwell */}
           <motion.div
             style={{ opacity: headingOpacity, y: headingY, willChange: 'transform, opacity' }}
-            className="flex flex-col items-center pt-10 sm:pt-14 gap-3 pointer-events-none"
+            className="flex flex-col items-center pt-28 gap-3 pointer-events-none"
           >
             <div className="flex items-center gap-2 px-5 py-1.5 rounded-full border border-gold/25 bg-black/40 backdrop-blur-md">
               <Crown size={13} className="text-gold"/>
@@ -189,15 +189,15 @@ export default function MembershipReveal({ sectionRef }) {
             </p>
           </motion.div>
 
-          {/* Cards — top-aligned so the 'Most Popular' banner is never clipped */}
+          {/* Cards — centered to avoid scroll trapping */}
           <motion.div
             style={{ opacity: cardsOpacity }}
-            className="absolute inset-0 overflow-y-auto"
+            className="absolute inset-0 flex items-center justify-center pointer-events-auto"
           >
-            <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-4">
+            <div className="w-full max-w-5xl mx-auto px-6 lg:px-8">
               <div
                 className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch"
-                style={isMobile ? {} : { transform: 'scale(0.82)', transformOrigin: 'top center' }}
+                style={{ transform: 'scale(0.80)', transformOrigin: 'center' }}
               >
                 {membershipPlans.map((plan, i) => (
                   <MembershipCard
@@ -205,7 +205,7 @@ export default function MembershipReveal({ sectionRef }) {
                     plan={plan}
                     i={i}
                     animate={true}
-                    isMobile={isMobile}
+                    isMobile={false}
                   />
                 ))}
               </div>
