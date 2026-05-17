@@ -184,16 +184,30 @@ export default function HotelBillUpload() {
           </div>
 
           {/* Quota Consumed */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Nips Consumed</label>
-              <input type="number" step="any" value={form.nips_consumed} onChange={e => setForm(p => ({ ...p, nips_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+              <input type="number" step="any" min="0" value={form.nips_consumed} onChange={e => {
+                const nips = e.target.value;
+                setForm(p => ({ ...p, nips_consumed: nips, beers_consumed: nips ? String(Number(nips) * 2) : '' }));
+              }} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Beers Consumed</label>
-              <input type="number" step="any" value={form.beers_consumed} onChange={e => setForm(p => ({ ...p, beers_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+              <input type="number" step="any" min="0" value={form.beers_consumed} onChange={e => {
+                const beers = e.target.value;
+                setForm(p => ({ ...p, beers_consumed: beers, nips_consumed: beers ? String(Number(beers) / 2) : '' }));
+              }} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
             </div>
           </div>
+          {(Number(form.nips_consumed) > 0 || Number(form.beers_consumed) > 0) && (
+            <div className="mb-4 px-3 py-2 rounded-lg bg-gold/5 border border-gold/10">
+              <p className="text-xs text-smoke text-center">
+                <span className="text-gold font-semibold">{Number(form.nips_consumed || 0)}</span> Nips = <span className="text-gold font-semibold">{Number(form.beers_consumed || 0)}</span> Beers
+                <span className="text-ash ml-2">(1 Nip = 2 Beers)</span>
+              </p>
+            </div>
+          )}
 
           {/* Mark Unlimited */}
           {selectedVisitObj && canUseUnlimited && (
