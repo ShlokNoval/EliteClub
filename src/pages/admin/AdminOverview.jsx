@@ -59,7 +59,7 @@ export default function AdminOverview() {
       const activeVisitsData = visitsRes?.data || [];
 
       setActiveVisits(activeVisitsData);
-      setHotels(hotelsData.filter(h => h.status === 'verified'));
+      setHotels(hotels.filter(h => h.status === 'verified'));
 
       const totalRevenue = bills.reduce((sum, b) => sum + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0);
 
