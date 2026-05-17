@@ -27,6 +27,7 @@ export default function AdminReports() {
       ]);
 
       const hotels = hotelsRes.data || [];
+      const members = membersRes.data || [];
       let filteredVisits = visitsRes.data || [];
       let filteredBills = billsRes.data || [];
 
