@@ -88,8 +88,8 @@ export default function HotelBillUpload() {
         food_bev_cost: Number(form.food_bev_cost || 0),
         liquor_cost_original: Number(form.liquor_cost_original || 0),
         liquor_cost_billed: Number(form.liquor_cost_billed || 0),
-        nips_consumed: Number(form.nips_consumed || 0),
-        beers_consumed: Number(form.beers_consumed || 0),
+        nips_consumed: parseFloat(form.nips_consumed || 0),
+        beers_consumed: Math.round(Number(form.beers_consumed || 0)),
         bill_image_url: imageUrl,
         notes: notes.trim() || null,
       });
