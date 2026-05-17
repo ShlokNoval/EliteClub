@@ -38,7 +38,7 @@ export default function UserDashboard() {
          await supabase.from('profiles').update({ status: 'expired' }).eq('id', profile.id);
       }
 
-      const [visitsRes, billsRes, hotelsRes] = await Promise.all([
+      const [visitsRes, billsRes, hotelsRes, eventsRes] = await Promise.all([
         supabase.from('visits').select('id').eq('member_id', profile.id),
         supabase.from('bills').select('food_bev_cost, liquor_cost_billed, savings, nips_consumed, beers_consumed, created_at').eq('member_id', profile.id),
         supabase.from('hotels').select('id, name, nip_limit, beer_limit').eq('status', 'verified').order('name'),
