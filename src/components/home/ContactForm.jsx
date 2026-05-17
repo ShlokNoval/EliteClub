@@ -155,6 +155,7 @@ export default function ContactForm() {
                   value={form.name}
                   onChange={handleChange}
                   placeholder="Enter your name"
+                  autoComplete="name"
                   required
                 />
                 <Input
@@ -164,6 +165,7 @@ export default function ContactForm() {
                   value={form.email}
                   onChange={handleChange}
                   placeholder="Enter your email"
+                  autoComplete="email"
                   required
                 />
                 <Input
@@ -173,6 +175,8 @@ export default function ContactForm() {
                   value={form.phone}
                   onChange={handleChange}
                   placeholder="+91 XXXXX XXXXX"
+                  autoComplete="tel"
+                  inputMode="tel"
                 />
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-champagne-dark tracking-wide">

@@ -1,11 +1,28 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ChevronDown, Crown } from 'lucide-react';
 import Button from '../common/Button';
 import logo from '../../assets/logo.png';
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= breakpoint : false
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    setIsMobile(mq.matches);
+    return () => mq.removeEventListener('change', handler);
+  }, [breakpoint]);
+
+  return isMobile;
+}
+
 export default function Hero() {
   const containerRef = useRef(null);
+  const isMobile = useIsMobile();
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -22,18 +39,20 @@ export default function Hero() {
   const contentY       = useTransform(scrollYProgress, [0, 0.25], [0, -80]);
 
   return (
-    <section ref={containerRef} className="relative h-[200vh] bg-black-deep">
+    <section ref={containerRef} className={`relative bg-black-deep ${isMobile ? 'h-[150vh]' : 'h-[200vh]'}`}>
       
       {/* ── Sticky viewport ─────────────────────── */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col items-center justify-center">
 
         {/* Depth glow */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(107,29,42,0.18)_0%,_transparent_65%)] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gold/5 rounded-full blur-[120px] pointer-events-none" />
+        {!isMobile && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gold/5 rounded-full blur-[120px] pointer-events-none" />
+        )}
 
         {/* ── Massive background typography ──────── */}
         <motion.div
-          style={{ scale: textScale, opacity: bgOpacity }}
+          style={{ scale: textScale, opacity: bgOpacity, willChange: 'transform, opacity' }}
           className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none overflow-hidden gap-0"
         >
           <motion.div style={{ y: pureX }}>
@@ -76,7 +95,7 @@ export default function Hero() {
         {/* ── Foreground content ─────────────────── */}
         <motion.div
           className="relative z-30 flex flex-col items-center text-center px-6 max-w-5xl"
-          style={{ opacity: contentOpacity, y: contentY }}
+          style={{ opacity: contentOpacity, y: contentY, willChange: 'transform, opacity' }}
         >
           {/* Logo */}
           <motion.div
@@ -93,7 +112,7 @@ export default function Hero() {
           </motion.div>
 
           <motion.h2
-            className="font-playfair text-5xl sm:text-7xl md:text-8xl font-bold leading-[1.08] mb-8"
+            className="font-playfair text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.08] mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 1, ease: [0.22, 1, 0.36, 1] }}
@@ -113,7 +132,7 @@ export default function Hero() {
 
           {/* Sub copy */}
           <motion.p
-            className="text-smoke text-lg sm:text-2xl md:text-3xl max-w-3xl mb-12 leading-relaxed"
+            className="text-smoke text-base sm:text-xl md:text-2xl lg:text-3xl max-w-3xl mb-8 sm:mb-12 leading-relaxed"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.55, duration: 1 }}

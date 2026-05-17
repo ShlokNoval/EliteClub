@@ -1,4 +1,4 @@
-export default function Input({ label, type = 'text', value, onChange, placeholder, name, required = false, icon: Icon, className = '' }) {
+export default function Input({ label, type = 'text', value, onChange, placeholder, name, required = false, icon: Icon, className = '', ...rest }) {
   return (
     <div className={`space-y-2 ${className}`}>
       {label && (
@@ -19,6 +19,7 @@ export default function Input({ label, type = 'text', value, onChange, placehold
           placeholder={placeholder}
           required={required}
           className={`w-full elite-input rounded-xl px-4 py-3 text-sm ${Icon ? 'pl-11' : ''}`}
+          {...rest}
         />
       </div>
     </div>
