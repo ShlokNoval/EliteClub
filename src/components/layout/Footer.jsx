@@ -23,13 +23,11 @@ export default function Footer() {
           <div>
             <h4 className="font-playfair text-gold font-semibold mb-6 text-lg">Quick Links</h4>
             <ul className="space-y-3">
-              {['Home', 'Membership Plans', 'Benefits', 'Partner Venues', 'Contact Us'].map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-smoke text-sm hover:text-gold transition-colors duration-300">
-                    {link}
-                  </a>
-                </li>
-              ))}
+              <li><a href="/#" className="text-smoke text-sm hover:text-gold transition-colors duration-300">Home</a></li>
+              <li><a href="/#membership" className="text-smoke text-sm hover:text-gold transition-colors duration-300">Membership Plans</a></li>
+              <li><a href="/#benefits" className="text-smoke text-sm hover:text-gold transition-colors duration-300">Benefits</a></li>
+              <li><a href="/#venues" className="text-smoke text-sm hover:text-gold transition-colors duration-300">Partner Venues</a></li>
+              <li><a href="/#contact" className="text-smoke text-sm hover:text-gold transition-colors duration-300">Contact Us</a></li>
             </ul>
           </div>
 
