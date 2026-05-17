@@ -114,6 +114,7 @@ export default function Navbar() {
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsMobileOpen(false)} />
             <motion.div
               className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-black-deep/95 backdrop-blur-xl border-l border-gold/10 p-8 pt-24"
+              style={{ willChange: 'transform' }}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -125,7 +126,7 @@ export default function Navbar() {
                     key={link.label}
                     href={link.href}
                     onClick={(e) => { if (link.href.startsWith('/#')) { e.preventDefault(); handleNavClick(link.href); } }}
-                    className="text-champagne-dark hover:text-gold text-lg font-medium tracking-wide transition-colors"
+                    className="text-champagne-dark hover:text-gold text-lg font-medium tracking-wide transition-colors min-h-[48px] flex items-center"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + i * 0.05 }}

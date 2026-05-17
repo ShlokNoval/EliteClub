@@ -43,11 +43,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/admin" className="text-smoke text-sm hover:text-gold transition-colors duration-300">
-                  Admin Dashboard
-                </Link>
-              </li>
-              <li>
                 <Link to="/hotel-login" className="text-smoke text-sm hover:text-gold transition-colors duration-300">
                   Hotel Portal
                 </Link>

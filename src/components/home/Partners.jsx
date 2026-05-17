@@ -14,7 +14,7 @@ const venueCard = {
 
 export default function Partners() {
   return (
-    <section id="venues" className="py-24 md:py-32 relative overflow-hidden">
+    <section id="venues" className="py-20 sm:py-24 md:py-32 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(107,29,42,0.1)_0%,_transparent_60%)] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,7 +26,7 @@ export default function Partners() {
 
         {/* Venue Grid */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
           variants={stagger}
           initial="hidden"
           whileInView="show"

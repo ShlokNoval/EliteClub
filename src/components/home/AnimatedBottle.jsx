@@ -10,7 +10,7 @@ function CO2Burst() {
   const [active, setActive] = useState(true);
   
   const particles = useRef(
-    Array.from({ length: 50 }).map(() => ({
+    Array.from({ length: 25 }).map(() => ({
       x: (Math.random() - 0.5) * 0.1,
       y: 3.1 + Math.random() * 0.2, // Start right above the cap
       z: (Math.random() - 0.5) * 0.1,

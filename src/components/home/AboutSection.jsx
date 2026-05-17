@@ -51,7 +51,7 @@ export default function AboutSection() {
   ];
 
   return (
-    <section id="about" className="py-24 md:py-32 relative overflow-hidden">
+    <section id="about" className="py-20 sm:py-24 md:py-32 relative overflow-hidden">
 
       {/* Parallax ambient glow */}
       <div className="absolute -top-20 -left-20 w-[500px] h-[500px] bg-burgundy/10 rounded-full blur-[120px] pointer-events-none" />

@@ -14,7 +14,7 @@ import { formatDate } from '../../utils/helpers';
 
 export default function ScanPage() {
   const { cardId } = useParams();
-  const { isAuthenticated, isHotel, hotel } = useAuth();
+  const { isAuthenticated, isHotel, isAdmin, hotel } = useAuth();
   const toast = useToast();
   const [card, setCard] = useState(null);
   const [member, setMember] = useState(null);
@@ -121,6 +121,15 @@ export default function ScanPage() {
         {loading ? (
           <div className="glass-strong rounded-2xl p-8 text-center">
             <p className="text-champagne">Loading card information...</p>
+          </div>
+        ) : (!isHotel && !isAdmin) ? (
+          <div className="glass-strong rounded-2xl p-8 text-center border border-red-400/20">
+            <Lock size={48} className="text-red-400/50 mx-auto mb-4" />
+            <h2 className="font-playfair text-xl font-bold text-red-400 mb-2">Unauthorized Access</h2>
+            <p className="text-smoke text-sm mb-6">Only verified EliteClub partner venues can scan and process membership cards.</p>
+            <Link to="/hotel-login" className="inline-block px-6 py-2 bg-gold/10 text-gold rounded-lg border border-gold/20 hover:bg-gold/20 transition-colors">
+              Venue Login
+            </Link>
           </div>
         ) : !card ? (
           <div className="glass-strong rounded-2xl p-8 text-center">
