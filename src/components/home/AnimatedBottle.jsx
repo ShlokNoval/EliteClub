@@ -171,13 +171,14 @@ export default function AnimatedBottle({ membershipRef, isMobile = false }) {
       // ── In Hero or above Membership ──
       const maxScale = isMobile ? 0.28 : 0.55;
       s = maxScale;
-      y = isMobile ? 2.0 - (h * 3.5) : 0.3 - (h * 1.3); // Travel further down on mobile
+      y = isMobile ? 1.5 - (h * 2.5) : 0.3 - (h * 1.3);
       
       if (isMobile) {
-        // Zig-zag 3.5 times across the screen
-        x = Math.sin(h * Math.PI * 7) * 1.6;
-        rx = h * Math.PI * 12; // Extra rolling for dynamism
-        ry = Math.cos(h * Math.PI * 7) * 0.4; // Tilt into the curves
+        // Sweep completely off-screen (bounds are ~2.5, so 4.5 hides it)
+        const sweep = h * Math.PI * 5; // 2.5 full sweeps
+        x = Math.sin(sweep) * 4.5; 
+        rx = h * Math.PI * 8; // Tumbling effect
+        ry = Math.cos(sweep) * 0.5; // Tilt into movement
       } else {
         x = lp(4.0, 0, ei(h));
         rx = lp(0, Math.PI * 4, ei(h)); 
