@@ -21,12 +21,12 @@ export default function Bottle3D({ capRef, ...props }) {
       {/* Y goes from 2.3 to 2.45 */}
       <mesh position={[0, 2.375, 0]}>
         <cylinderGeometry args={[0.28, 0.28, 0.15, 32]} />
-        <meshPhysicalMaterial 
-          transmission={1} 
-          roughness={0.1} 
-          ior={1.5} 
-          thickness={1} 
+        <meshStandardMaterial 
           color="#c9a94e" 
+          transparent={true}
+          opacity={0.8}
+          roughness={0.1}
+          metalness={0.3}
         />
       </mesh>
 
@@ -34,12 +34,12 @@ export default function Bottle3D({ capRef, ...props }) {
       {/* Y goes from 0.8 to 2.3 */}
       <mesh position={[0, 1.55, 0]}>
         <cylinderGeometry args={[0.22, 0.25, 1.5, 32]} />
-        <meshPhysicalMaterial 
-          transmission={1} 
-          roughness={0.05} 
-          ior={1.5} 
-          thickness={1.5} 
+        <meshStandardMaterial 
           color="#c9a94e" 
+          transparent={true}
+          opacity={0.8}
+          roughness={0.1}
+          metalness={0.3}
         />
       </mesh>
 
@@ -47,12 +47,12 @@ export default function Bottle3D({ capRef, ...props }) {
       {/* Y goes from 0 to 0.8 */}
       <mesh position={[0, 0.4, 0]}>
         <cylinderGeometry args={[0.25, 0.85, 0.8, 32]} />
-        <meshPhysicalMaterial 
-          transmission={1} 
-          roughness={0.05} 
-          ior={1.5} 
-          thickness={2} 
+        <meshStandardMaterial 
           color="#c9a94e" 
+          transparent={true}
+          opacity={0.8}
+          roughness={0.1}
+          metalness={0.3}
         />
       </mesh>
 
@@ -60,15 +60,12 @@ export default function Bottle3D({ capRef, ...props }) {
       {/* Y goes from -3.5 to 0 */}
       <mesh position={[0, -1.75, 0]}>
         <cylinderGeometry args={[0.85, 0.85, 3.5, 32]} />
-        <meshPhysicalMaterial 
-          transmission={1} 
-          roughness={0.05} 
-          metalness={0.1}
-          ior={1.5} 
-          thickness={2.5} 
+        <meshStandardMaterial 
           color="#b08d3b" // Deep amber liquid color
-          clearcoat={1}
-          clearcoatRoughness={0.1}
+          transparent={true}
+          opacity={0.85}
+          roughness={0.1}
+          metalness={0.4}
         />
       </mesh>
 

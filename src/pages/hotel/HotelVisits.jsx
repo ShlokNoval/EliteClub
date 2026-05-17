@@ -5,12 +5,15 @@ import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../components/common/Toast';
 import { supabase } from '../../lib/supabase';
 
 export default function HotelVisits() {
   const { hotel } = useAuth();
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => { if (hotel) fetchVisits(); }, [hotel]);
 
@@ -22,6 +25,35 @@ export default function HotelVisits() {
       .limit(100);
     setVisits(data || []);
     setLoading(false);
+  };
+
+  const handleForceCheckout = async (visitId) => {
+    if (!window.confirm("Are you sure you want to force check-out this user?")) return;
+    setCheckingOut(true);
+    try {
+      // 1. Update visit
+      await supabase.from('visits')
+        .update({ check_out: new Date().toISOString(), status: 'closed' })
+        .eq('id', visitId);
+      
+      // 2. Fetch the visit to get member_id for scan log
+      const visit = visits.find(v => v.id === visitId);
+      if (visit) {
+        await supabase.from('scans').insert({
+          card_id: 'MANUAL',
+          hotel_id: hotel.id,
+          member_id: visit.member_id,
+          scan_type: 'check_out',
+          result: 'valid'
+        });
+      }
+
+      fetchVisits();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCheckingOut(false);
+    }
   };
 
   const openVisits = visits.filter(v => v.status === 'open');
@@ -59,7 +91,18 @@ export default function HotelVisits() {
                   <p className="text-champagne font-medium text-sm">{v.profiles?.full_name || '—'}</p>
                   <p className="text-ash text-xs">{v.profiles?.member_id} • Checked in at {new Date(v.check_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
-                <Badge status="pending" />
+                <div className="flex items-center gap-3">
+                  {v.is_manual && (
+                    <button 
+                      onClick={() => handleForceCheckout(v.id)}
+                      disabled={checkingOut}
+                      className="px-3 py-1 bg-red-400/10 text-red-400 border border-red-400/20 rounded-lg text-xs font-medium hover:bg-red-400/20 transition-colors cursor-pointer"
+                    >
+                      {checkingOut ? '...' : 'Force Check-Out'}
+                    </button>
+                  )}
+                  <Badge status="pending" />
+                </div>
               </div>
             ))}
           </div>

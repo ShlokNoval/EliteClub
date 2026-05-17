@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, Upload, IndianRupee, Camera } from 'lucide-react';
+import { Receipt, Upload, IndianRupee, Camera, Eye } from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Button from '../../components/common/Button';
@@ -13,7 +13,7 @@ export default function HotelBillUpload() {
   const toast = useToast();
   const [closedVisits, setClosedVisits] = useState([]);
   const [selectedVisit, setSelectedVisit] = useState('');
-  const [form, setForm] = useState({ food_bev_cost: '', liquor_cost_original: '', liquor_cost_billed: '' });
+  const [form, setForm] = useState({ food_bev_cost: '', liquor_cost_original: '', liquor_cost_billed: '', nips_consumed: '', beers_consumed: '' });
   const [billImage, setBillImage] = useState(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -87,6 +87,8 @@ export default function HotelBillUpload() {
         food_bev_cost: Number(form.food_bev_cost || 0),
         liquor_cost_original: Number(form.liquor_cost_original || 0),
         liquor_cost_billed: Number(form.liquor_cost_billed || 0),
+        nips_consumed: Number(form.nips_consumed || 0),
+        beers_consumed: Number(form.beers_consumed || 0),
         bill_image_url: imageUrl,
         notes: notes.trim() || null,
       });
@@ -95,7 +97,7 @@ export default function HotelBillUpload() {
 
       toast.success('Bill uploaded successfully!');
       setSelectedVisit('');
-      setForm({ food_bev_cost: '', liquor_cost_original: '', liquor_cost_billed: '' });
+      setForm({ food_bev_cost: '', liquor_cost_original: '', liquor_cost_billed: '', nips_consumed: '', beers_consumed: '' });
       setBillImage(null);
       setNotes('');
       fetchData();
@@ -150,6 +152,18 @@ export default function HotelBillUpload() {
             </div>
           </div>
 
+          {/* Quota Consumed */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark">Nips Consumed</label>
+              <input type="number" value={form.nips_consumed} onChange={e => setForm(p => ({ ...p, nips_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-champagne-dark">Beers Consumed</label>
+              <input type="number" value={form.beers_consumed} onChange={e => setForm(p => ({ ...p, beers_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+            </div>
+          </div>
+
           {/* Savings preview */}
           {savings > 0 && (
             <div className="bg-green-400/5 border border-green-400/15 rounded-xl p-4 mb-4 text-center">
@@ -186,12 +200,20 @@ export default function HotelBillUpload() {
               {recentBills.map(b => (
                 <div key={b.id} className="pb-4 border-b border-white/5 last:border-0">
                   <div className="flex justify-between items-start mb-2">
-                    <p className="text-champagne text-sm font-medium">{b.profiles?.full_name || '—'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-champagne text-sm font-medium">{b.profiles?.full_name || '—'}</p>
+                      {b.bill_image_url && (
+                        <a href={b.bill_image_url} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light transition-colors" title="View Bill Image">
+                          <Eye size={14} />
+                        </a>
+                      )}
+                    </div>
                     <p className="text-ash text-xs">{new Date(b.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="grid grid-cols-4 gap-2 text-xs">
                     <div><p className="text-smoke">Food</p><p className="text-champagne">{formatCurrency(b.food_bev_cost)}</p></div>
                     <div><p className="text-smoke">Liquor</p><p className="text-champagne">{formatCurrency(b.liquor_cost_billed)}</p></div>
+                    <div><p className="text-smoke">Consumed</p><p className="text-champagne">{b.nips_consumed || 0}N / {b.beers_consumed || 0}B</p></div>
                     <div><p className="text-smoke">Saved</p><p className="text-green-400 font-semibold">{formatCurrency(b.savings)}</p></div>
                   </div>
                 </div>

@@ -57,7 +57,7 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
           style={{ perspective: '1000px' }}
         >
           {/* Top Row */}
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex items-start justify-between mb-4">
             <img src={logo} alt="EliteClub" className="h-10 w-auto" />
             <span className="text-xs text-gold font-semibold tracking-[0.15em] uppercase bg-gold/10 border border-gold/20 px-3 py-1 rounded-full">
               {user.plan ? `${user.plan} Member` : 'Member'}
@@ -65,13 +65,13 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
           </div>
 
           {/* Member Info */}
-          <div className="mb-6">
+          <div className="mb-4">
             <p className="text-champagne font-playfair text-xl font-bold">{user.full_name}</p>
             <p className="text-gold text-sm font-mono mt-1">{user.member_id || user.card_id || '—'}</p>
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-6 text-xs">
+          <div className="grid grid-cols-2 gap-4 mb-4 text-xs">
             <div>
               <p className="text-smoke">Valid From</p>
               <p className="text-champagne-dark font-medium">{formatDate(user.join_date)}</p>

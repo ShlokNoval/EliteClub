@@ -11,11 +11,14 @@ CREATE TABLE profiles (
   phone text DEFAULT '',
   role text NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('active', 'inactive', 'pending', 'expired')),
-  plan text CHECK (plan IN ('dainik', 'decka') OR plan IS NULL),
+  plan text CHECK (plan IN ('dainik', 'decka', 'solo', 'shareable') OR plan IS NULL),
   card_id text UNIQUE,
   member_id text UNIQUE,
   join_date timestamptz,
   expiry_date timestamptz,
+  unlimited_day_used_at timestamptz,
+  otp_code text,
+  otp_expires_at timestamptz,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -41,6 +44,8 @@ CREATE TABLE hotels (
   location text DEFAULT '',
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'rejected')),
   scan_count integer DEFAULT 0,
+  nip_limit integer DEFAULT 4,
+  beer_limit integer DEFAULT 8,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -64,6 +69,7 @@ CREATE TABLE visits (
   check_in timestamptz NOT NULL DEFAULT now(),
   check_out timestamptz,
   status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  is_manual boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
 
@@ -77,6 +83,8 @@ CREATE TABLE bills (
   liquor_cost_original numeric NOT NULL DEFAULT 0,
   liquor_cost_billed numeric NOT NULL DEFAULT 0,
   savings numeric GENERATED ALWAYS AS (liquor_cost_original - liquor_cost_billed) STORED,
+  nips_consumed integer DEFAULT 0,
+  beers_consumed integer DEFAULT 0,
   bill_image_url text,
   notes text,
   created_at timestamptz DEFAULT now()
@@ -96,6 +104,23 @@ BEGIN
   SELECT email INTO v_email FROM profiles
   WHERE member_id = p_member_id AND role = 'member';
   RETURN v_email;
+END;
+$$;
+
+-- Admin password reset
+CREATE OR REPLACE FUNCTION admin_reset_password(p_email text, p_new_password text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin') THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  UPDATE auth.users
+  SET encrypted_password = crypt(p_new_password, gen_salt('bf'))
+  WHERE email = p_email;
 END;
 $$;
 
@@ -155,8 +180,14 @@ CREATE POLICY "hotels_anon_insert" ON hotels FOR INSERT
 CREATE POLICY "hotels_own_select" ON hotels FOR SELECT
   USING (auth_user_id = auth.uid());
 
+CREATE POLICY "hotels_verified_select" ON hotels FOR SELECT
+  USING (status = 'verified');
+
 -- SCANS policies
 CREATE POLICY "scans_admin_select" ON scans FOR SELECT
+  USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+
+CREATE POLICY "scans_admin_all" ON scans FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
 
 CREATE POLICY "scans_hotel_all" ON scans FOR ALL
@@ -170,6 +201,9 @@ CREATE POLICY "scans_member_select" ON scans FOR SELECT
 
 -- VISITS policies
 CREATE POLICY "visits_admin_select" ON visits FOR SELECT
+  USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+
+CREATE POLICY "visits_admin_all" ON visits FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
 
 CREATE POLICY "visits_hotel_all" ON visits FOR ALL
@@ -204,7 +238,7 @@ VALUES (
   'active'
 );
 
--- ═══ Generate 1111 QR Cards (K002098 to K003208) ═══
+-- ═══ Generate 300 QR Cards (K002098 to K002397) ═══
 INSERT INTO qr_cards (card_id, status)
 SELECT 'K' || LPAD((2098 + g)::text, 6, '0'), 'available'
-FROM generate_series(0, 1110) AS g;
+FROM generate_series(0, 299) AS g;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, Search, Download, IndianRupee } from 'lucide-react';
+import { Receipt, Search, Download, IndianRupee, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
@@ -34,7 +34,7 @@ export default function AdminBills() {
 
   const handleExport = () => {
     exportToCSV(filtered.map(b => ({
-      Date: formatDate(b.created_at),
+      Date: ' ' + new Date(b.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
       Member: b.profiles?.full_name || '',
       Member_ID: b.profiles?.member_id || '',
       Hotel: b.hotels?.name || '',
@@ -96,6 +96,7 @@ export default function AdminBills() {
                 <th>Liquor (Original)</th>
                 <th>Liquor (Billed)</th>
                 <th>Savings</th>
+                <th>Bill</th>
               </tr>
             </thead>
             <tbody>
@@ -108,6 +109,15 @@ export default function AdminBills() {
                   <td className="text-smoke font-mono text-xs">{formatCurrency(b.liquor_cost_original)}</td>
                   <td className="text-champagne font-mono text-xs">{formatCurrency(b.liquor_cost_billed)}</td>
                   <td className="text-green-400 font-mono text-xs font-semibold">{formatCurrency(b.savings)}</td>
+                  <td>
+                    {b.bill_image_url ? (
+                      <a href={b.bill_image_url} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light transition-colors inline-block" title="View Bill Image">
+                        <Eye size={16} />
+                      </a>
+                    ) : (
+                      <span className="text-smoke text-xs">—</span>
+                    )}
+                  </td>
                 </motion.tr>
               ))}
             </tbody>

@@ -4,7 +4,7 @@ import { Check, Sparkles, Crown } from 'lucide-react';
 import SectionHeading from '../common/SectionHeading';
 import Button from '../common/Button';
 import { membershipPlans } from '../../data/mockData';
-import { Link } from 'react-router-dom';
+// v2: Buttons scroll to contact section instead of login
 
 const featureVariants = {
   hidden: {},
@@ -90,7 +90,7 @@ function MembershipCard({ plan, i }) {
             <span className={`text-sm font-semibold tracking-[0.15em] uppercase ${plan.popular ? 'text-burgundy-light' : 'text-gold'}`}>{plan.subtitle}</span>
           </div>
           <h3 className="font-playfair text-3xl font-bold text-champagne mb-2">{plan.name}</h3>
-          <p className="text-smoke text-sm">{plan.duration} • {plan.mrpDays} days MRP + {plan.freeDays} day FREE</p>
+          <p className="text-smoke text-sm">{plan.duration} • {plan.mrpDays} days normal quota + {plan.unlimitedDays} day unlimited</p>
         </div>
 
         <div className="mb-8 flex items-end gap-2">
@@ -113,12 +113,17 @@ function MembershipCard({ plan, i }) {
           ))}
         </motion.ul>
 
-        <Link to="/login" className="mt-auto pt-8 z-10">
-          <Button variant={plan.popular ? 'burgundy' : 'gold'} size="lg" className="w-full relative overflow-hidden group">
+        <div className="mt-auto pt-8 z-10">
+          <Button 
+            variant={plan.popular ? 'burgundy' : 'gold'} 
+            size="lg" 
+            className="w-full relative overflow-hidden group"
+            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+          >
             <span className="relative z-10">Get {plan.name}</span>
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
           </Button>
-        </Link>
+        </div>
       </div>
     </motion.div>
   );

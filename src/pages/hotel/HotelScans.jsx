@@ -66,7 +66,7 @@ export default function HotelScans() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-champagne font-medium text-sm truncate">{scan.profiles?.full_name || scan.card_id}</p>
-                  <p className="text-ash text-xs capitalize">{scan.scan_type?.replace('_', ' ')} • {scan.profiles?.plan || 'Unknown'}</p>
+                  <p className="text-ash text-xs capitalize">{scan.scan_type?.replace('_', ' ')} {scan.card_id === 'MANUAL' && '(Forced)'} • {scan.profiles?.plan || 'Unknown'}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <Badge status={scan.result} />

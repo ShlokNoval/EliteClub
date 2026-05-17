@@ -6,7 +6,7 @@ import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/common/Toast';
 import { formatDate, maskPhone, maskEmail } from '../../utils/helpers';
 
@@ -24,7 +24,7 @@ export default function AdminUsers() {
   const toast = useToast();
 
   // Add user form
-  const [newUser, setNewUser] = useState({ full_name: '', email: '', phone: '', plan: 'dainik', card_id: '', password: '' });
+  const [newUser, setNewUser] = useState({ full_name: '', email: '', phone: '', plan: 'solo', card_id: '', password: '' });
   // Edit user form
   const [editForm, setEditForm] = useState({});
 
@@ -62,18 +62,19 @@ export default function AdminUsers() {
       // Generate a synthetic email if none provided
       const email = newUser.email.trim() || `${newUser.card_id.toLowerCase()}@members.eliteclub.local`;
 
-      // Create auth user with non-persisting client
-      const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
-        email,
-        password: newUser.password,
+      // Create auth user via secure RPC (bypasses email rate limits)
+      const { data: userId, error: rpcError } = await supabase.rpc('create_member_user', {
+        p_email: email,
+        p_password: newUser.password,
       });
-      if (authError) throw authError;
+      if (rpcError) throw rpcError;
+      if (!userId) throw new Error('Failed to create user account.');
 
-      const userId = authData.user.id;
+      const authUserId = userId;
 
       // Create profile
       const { error: profileError } = await supabase.from('profiles').insert({
-        id: userId,
+        id: authUserId,
         email,
         full_name: newUser.full_name.trim(),
         phone: newUser.phone.trim(),
@@ -88,12 +89,12 @@ export default function AdminUsers() {
 
       // Assign the QR card
       await supabase.from('qr_cards')
-        .update({ status: 'assigned', assigned_to: userId, assigned_at: new Date().toISOString() })
+        .update({ status: 'assigned', assigned_to: authUserId, assigned_at: new Date().toISOString() })
         .eq('card_id', newUser.card_id);
 
       toast.success(`User ${newUser.full_name} created! Member ID: ${newUser.card_id}`);
       setAddModal(false);
-      setNewUser({ full_name: '', email: '', phone: '', plan: 'dainik', card_id: '', password: '' });
+      setNewUser({ full_name: '', email: '', phone: '', plan: 'solo', card_id: '', password: '' });
       fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to create user.');
@@ -116,6 +117,53 @@ export default function AdminUsers() {
         .eq('id', editForm.id);
       if (error) throw error;
       toast.success('User updated.');
+      setEditModal(false);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const newPass = prompt("Enter new password for " + editForm.full_name);
+    if (!newPass) return;
+    try {
+      const { error } = await supabase.rpc('admin_reset_password', {
+        p_email: editForm.email,
+        p_new_password: newPass
+      });
+      if (error) throw error;
+      toast.success("Password reset successfully!");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleReassignCard = async () => {
+    if (!window.confirm("This will permanently mark the current card as SUSPENDED and assign a new available card. Continue?")) return;
+    
+    const nextCard = cards.find(c => c.status === 'available');
+    if (!nextCard) {
+      toast.error("No available cards in inventory!");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Suspend old card
+      if (editForm.card_id) {
+        await supabase.from('qr_cards').update({ status: 'suspended', assigned_to: null }).eq('card_id', editForm.card_id);
+      }
+      
+      // Assign new card
+      await supabase.from('qr_cards').update({ status: 'assigned', assigned_to: editForm.id, assigned_at: new Date().toISOString() }).eq('card_id', nextCard.card_id);
+
+      // Update profile
+      await supabase.from('profiles').update({ card_id: nextCard.card_id, member_id: nextCard.card_id }).eq('id', editForm.id);
+
+      toast.success(`New card ${nextCard.card_id} assigned successfully!`);
       setEditModal(false);
       fetchData();
     } catch (err) {
@@ -230,8 +278,10 @@ export default function AdminUsers() {
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Plan *</label>
               <select value={newUser.plan} onChange={e => setNewUser(p => ({ ...p, plan: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
-                <option value="dainik">Dainik Member</option>
-                <option value="decka">Decka Member</option>
+                <option value="solo">Solo (₹4,000) - Single Person</option>
+                <option value="shareable">Shareable (₹6,000) - OTP Verified</option>
+                <option value="dainik">Dainik Member (Legacy)</option>
+                <option value="decka">Decka Member (Legacy)</option>
               </select>
             </div>
           </div>
@@ -283,16 +333,28 @@ export default function AdminUsers() {
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Plan</label>
               <select value={editForm.plan || ''} onChange={e => setEditForm(p => ({ ...p, plan: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
-                <option value="dainik">Dainik</option>
-                <option value="decka">Decka</option>
+                <option value="solo">Solo (₹4,000)</option>
+                <option value="shareable">Shareable (₹6,000)</option>
+                <option value="dainik">Dainik (Legacy)</option>
+                <option value="decka">Decka (Legacy)</option>
               </select>
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-champagne-dark">Member ID</label>
-            <p className="text-gold font-mono text-sm">{editForm.member_id || 'Not assigned'}</p>
+          <div className="flex items-center justify-between border-t border-white/5 pt-4">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-champagne-dark">Member ID / Card</label>
+              <p className="text-gold font-mono text-sm">{editForm.member_id || 'Not assigned'}</p>
+            </div>
+            <button onClick={handleReassignCard} className="text-xs text-red-400 hover:text-red-300 border border-red-400/20 bg-red-400/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+              Mark Lost & Reassign
+            </button>
           </div>
-          <div className="flex gap-3 pt-4">
+          <div className="flex justify-between items-center pb-2">
+            <button onClick={handleResetPassword} className="text-xs text-smoke hover:text-champagne transition-colors cursor-pointer flex items-center gap-1">
+              <Lock size={12} /> Reset Password
+            </button>
+          </div>
+          <div className="flex gap-3 pt-2">
             <Button variant="gold" className="flex-1" onClick={handleEditUser} disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>

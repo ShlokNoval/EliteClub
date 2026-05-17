@@ -22,8 +22,18 @@ export default function Navbar() {
   const handleNavClick = (href) => {
     setIsMobileOpen(false);
     if (href.startsWith('/#')) {
-      const el = document.getElementById(href.replace('/#', ''));
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      const id = href.replace('/#', '');
+      const el = document.getElementById(id);
+      if (el) {
+        // For membership section, scroll past the bottle animation to show cards directly
+        if (id === 'membership') {
+          const sectionTop = el.offsetTop;
+          const sectionHeight = el.offsetHeight;
+          window.scrollTo({ top: sectionTop + sectionHeight * 0.55, behavior: 'smooth' });
+        } else {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
     }
   };
 

@@ -6,7 +6,7 @@ import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/common/Toast';
 import { formatDate } from '../../utils/helpers';
 
@@ -18,6 +18,8 @@ export default function AdminHotels() {
   const [approveModal, setApproveModal] = useState(false);
   const [approveTarget, setApproveTarget] = useState(null);
   const [hotelPassword, setHotelPassword] = useState('');
+  const [quotas, setQuotas] = useState({ nip_limit: 4, beer_limit: 8 });
+  const [editModal, setEditModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
@@ -49,21 +51,41 @@ export default function AdminHotels() {
     }
     setSaving(true);
     try {
-      // Create auth user for the hotel
-      const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
-        email: approveTarget.email,
-        password: hotelPassword,
+      // Create auth user via custom secure RPC to bypass email rate limits
+      const { data: newUserId, error: rpcError } = await supabase.rpc('create_hotel_user', {
+        p_email: approveTarget.email,
+        p_password: hotelPassword
       });
-      if (authError) throw authError;
+
+      if (rpcError) throw rpcError;
+      if (!newUserId) throw new Error('Failed to create hotel login.');
 
       // Update hotel record
       await supabase.from('hotels')
-        .update({ status: 'verified', auth_user_id: authData.user.id })
+        .update({ status: 'verified', auth_user_id: newUserId, nip_limit: quotas.nip_limit, beer_limit: quotas.beer_limit })
         .eq('id', approveTarget.id);
 
       toast.success(`${approveTarget.name} approved! Login: ${approveTarget.email}`);
       setApproveModal(false);
       setHotelPassword('');
+      fetchHotels();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Error approving hotel.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateQuotas = async () => {
+    setSaving(true);
+    try {
+      await supabase.from('hotels')
+        .update({ nip_limit: quotas.nip_limit, beer_limit: quotas.beer_limit })
+        .eq('id', selected.id);
+      toast.success(`${selected.name} quotas updated.`);
+      setEditModal(false);
+      setSelected(null);
       fetchHotels();
     } catch (err) {
       toast.error(err.message);
@@ -137,6 +159,7 @@ export default function AdminHotels() {
                 <div className="flex justify-between"><span className="text-smoke">Contact</span><span className="text-champagne-dark">{h.contact_person}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Phone</span><span className="text-champagne-dark">{h.phone}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Location</span><span className="text-champagne-dark">{h.location || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-smoke">Quotas</span><span className="text-champagne-dark">{h.nip_limit} Nips / {h.beer_limit} Beers</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Scans</span><span className="text-champagne-dark font-mono">{h.scan_count}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Applied</span><span className="text-champagne-dark">{formatDate(h.created_at)}</span></div>
               </div>
@@ -145,8 +168,8 @@ export default function AdminHotels() {
                   <Button variant="gold" size="sm" className="flex-1" onClick={() => { setApproveTarget(h); setApproveModal(true); }}>Approve</Button>
                   <Button variant="danger" size="sm" className="flex-1" onClick={() => handleReject(h)}>Reject</Button>
                 </>}
-                {h.status === 'verified' && <Button variant="ghost" size="sm" className="flex-1" onClick={() => setSelected(h)}>View Details</Button>}
-                {h.status === 'rejected' && <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setApproveTarget(h); setApproveModal(true); }}>Review & Approve</Button>}
+                {h.status === 'verified' && <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setSelected(h); setQuotas({ nip_limit: h.nip_limit || 4, beer_limit: h.beer_limit || 8 }); setEditModal(true); }}>Edit Quotas</Button>}
+                {h.status === 'rejected' && <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setApproveTarget(h); setQuotas({ nip_limit: 4, beer_limit: 8 }); setApproveModal(true); }}>Review & Approve</Button>}
               </div>
             </GlassCard>
           ))}
@@ -164,6 +187,16 @@ export default function AdminHotels() {
               <label className="block text-sm font-medium text-champagne-dark flex items-center gap-2"><Lock size={14} className="text-gold" /> Hotel Password *</label>
               <input type="text" value={hotelPassword} onChange={e => setHotelPassword(e.target.value)} className="w-full elite-input rounded-xl px-4 py-3 text-sm" placeholder="Set password (min 6 chars)" />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-champagne-dark">Nip Quota</label>
+                <input type="number" value={quotas.nip_limit} onChange={e => setQuotas(p => ({ ...p, nip_limit: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-champagne-dark">Beer Quota</label>
+                <input type="number" value={quotas.beer_limit} onChange={e => setQuotas(p => ({ ...p, beer_limit: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+              </div>
+            </div>
             <div className="flex gap-3 pt-2">
               <Button variant="gold" className="flex-1" onClick={handleApprove} disabled={saving}>{saving ? 'Approving...' : 'Approve & Set Password'}</Button>
               <Button variant="ghost" onClick={() => { setApproveModal(false); setHotelPassword(''); }}>Cancel</Button>
@@ -172,18 +205,33 @@ export default function AdminHotels() {
         )}
       </Modal>
 
-      {/* Detail Modal */}
-      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title="Hotel Details">
+      {/* Detail/Edit Modal */}
+      <Modal isOpen={editModal} onClose={() => { setEditModal(false); setSelected(null); }} title="Hotel Details & Quotas">
         {selected && (
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-smoke">Name:</span><p className="text-champagne">{selected.name}</p></div>
-            <div><span className="text-smoke">Status:</span><div className="mt-1"><Badge status={selected.status} /></div></div>
-            <div><span className="text-smoke">Contact:</span><p className="text-champagne">{selected.contact_person}</p></div>
-            <div><span className="text-smoke">Phone:</span><p className="text-champagne">{selected.phone}</p></div>
-            <div><span className="text-smoke">Email:</span><p className="text-champagne font-mono text-xs">{selected.email}</p></div>
-            <div><span className="text-smoke">Location:</span><p className="text-champagne">{selected.location || '—'}</p></div>
-            <div><span className="text-smoke">Scans:</span><p className="text-champagne font-mono">{selected.scan_count}</p></div>
-            <div><span className="text-smoke">Joined:</span><p className="text-champagne">{formatDate(selected.created_at)}</p></div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><span className="text-smoke">Name:</span><p className="text-champagne">{selected.name}</p></div>
+              <div><span className="text-smoke">Status:</span><div className="mt-1"><Badge status={selected.status} /></div></div>
+              <div><span className="text-smoke">Contact:</span><p className="text-champagne">{selected.contact_person}</p></div>
+              <div><span className="text-smoke">Phone:</span><p className="text-champagne">{selected.phone}</p></div>
+            </div>
+            <div className="border-t border-white/10 pt-4">
+              <h4 className="text-champagne mb-3">Quota Limits</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-champagne-dark">Nips per User</label>
+                  <input type="number" value={quotas.nip_limit} onChange={e => setQuotas(p => ({ ...p, nip_limit: parseInt(e.target.value) || 0 }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-champagne-dark">Beers per User</label>
+                  <input type="number" value={quotas.beer_limit} onChange={e => setQuotas(p => ({ ...p, beer_limit: parseInt(e.target.value) || 0 }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-6">
+                <Button variant="gold" className="flex-1" onClick={handleUpdateQuotas} disabled={saving}>{saving ? 'Saving...' : 'Save Quotas'}</Button>
+                <Button variant="ghost" onClick={() => { setEditModal(false); setSelected(null); }}>Cancel</Button>
+              </div>
+            </div>
           </div>
         )}
       </Modal>

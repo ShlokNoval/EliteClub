@@ -9,7 +9,3 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Secondary client for admin user-creation (doesn't persist session)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { persistSession: false },
-});

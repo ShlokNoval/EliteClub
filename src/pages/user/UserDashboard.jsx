@@ -15,7 +15,8 @@ import logo from '../../assets/logo.png';
 export default function UserDashboard() {
   const { profile, logout } = useAuth();
   const [showCard, setShowCard] = useState(true);
-  const [stats, setStats] = useState({ visits: 0, totalSaved: 0, totalSpent: 0 });
+  const [stats, setStats] = useState({ visits: 0, totalSaved: 0, totalSpent: 0, nipsToday: 0, beersToday: 0 });
+  const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const plan = membershipPlans.find(p => p.id === profile?.plan);
@@ -27,16 +28,43 @@ export default function UserDashboard() {
 
   const fetchStats = async () => {
     try {
-      const [visitsRes, billsRes] = await Promise.all([
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [visitsRes, billsRes, hotelsRes] = await Promise.all([
         supabase.from('visits').select('id').eq('member_id', profile.id),
-        supabase.from('bills').select('food_bev_cost, liquor_cost_billed, savings').eq('member_id', profile.id),
+        supabase.from('bills').select('food_bev_cost, liquor_cost_billed, savings, nips_consumed, beers_consumed, created_at').eq('member_id', profile.id),
+        supabase.from('hotels').select('id, name, nip_limit, beer_limit').eq('status', 'verified').order('name'),
       ]);
       const visits = visitsRes.data || [];
       const bills = billsRes.data || [];
+      const hotels = hotelsRes.data || [];
+
+      const todaysBills = bills.filter(b => new Date(b.created_at) >= todayStart);
+      const nipsToday = todaysBills.reduce((s, b) => s + (b.nips_consumed || 0), 0);
+      const beersToday = todaysBills.reduce((s, b) => s + (b.beers_consumed || 0), 0);
+
+      const isUnlimitedToday = profile.unlimited_day_used_at && new Date(profile.unlimited_day_used_at) >= todayStart;
+
+      // Dynamically filter venues based on consumed quota
+      if (isUnlimitedToday) {
+        setVenues(hotels);
+      } else {
+        const availableVenues = hotels.filter(v => {
+          // A venue is available if the user hasn't exhausted BOTH the nip limit AND the beer limit
+          const hasNipsLeft = nipsToday < (v.nip_limit || 4);
+          const hasBeersLeft = beersToday < (v.beer_limit || 8);
+          return hasNipsLeft || hasBeersLeft;
+        });
+        setVenues(availableVenues);
+      }
+
       setStats({
         visits: visits.length,
-        totalSpent: bills.reduce((s, b) => s + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0),
+        totalSpent: bills.reduce((s, b) => s + Number(b.liquor_cost_billed || 0), 0),
         totalSaved: bills.reduce((s, b) => s + Number(b.savings || 0), 0),
+        nipsToday,
+        beersToday
       });
     } catch (err) {
       console.error(err);
@@ -141,6 +169,23 @@ export default function UserDashboard() {
                   </div>
                 </GlassCard>
               )}
+
+              {/* Today's Consumption */}
+              <GlassCard hover={false}>
+                <h3 className="font-playfair text-lg font-semibold text-champagne mb-4 flex items-center gap-2">
+                  <Wine size={20} className="text-gold" /> Today's Consumption
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 rounded-xl bg-champagne/5 border border-champagne/10">
+                    <p className="text-3xl font-bold text-champagne">{stats.nipsToday}</p>
+                    <p className="text-smoke text-xs mt-1">Nips Consumed</p>
+                  </div>
+                  <div className="text-center p-4 rounded-xl bg-gold/5 border border-gold/10">
+                    <p className="text-3xl font-bold text-gold">{stats.beersToday}</p>
+                    <p className="text-smoke text-xs mt-1">Beers Consumed</p>
+                  </div>
+                </div>
+              </GlassCard>
             </div>
 
             {/* Right Column */}
@@ -160,20 +205,36 @@ export default function UserDashboard() {
                   <div className="flex justify-between"><span className="text-smoke">Phone</span><span className="text-champagne">{profile.phone || '—'}</span></div>
                   <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold font-medium">{plan?.name || '—'}</span></div>
                   <div className="flex justify-between"><span className="text-smoke">Member Since</span><span className="text-champagne">{formatDate(profile.join_date)}</span></div>
+                  <div className="flex flex-col gap-1 border-t border-white/5 pt-3 mt-3">
+                    <div className="flex justify-between">
+                      <span className="text-smoke flex items-center gap-1"><Wine size={12}/> 1-Day Unlimited</span>
+                      <span className={profile.unlimited_day_used_at ? "text-ash" : "text-green-400 font-medium"}>
+                        {profile.unlimited_day_used_at ? `Used on ${formatDate(profile.unlimited_day_used_at)}` : "Available Today"}
+                      </span>
+                    </div>
+                    {profile.unlimited_day_used_at && (
+                      <span className="text-[10px] text-smoke text-right">Available again upon next renewal</span>
+                    )}
+                  </div>
                 </div>
               </GlassCard>
 
               {/* Partner Venues */}
               <GlassCard hover={false}>
-                <h3 className="text-sm font-semibold text-gold mb-3">Available Venues ({partnerVenues.length})</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {partnerVenues.slice(0, 6).map((v) => (
-                    <div key={v.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-white/3 last:border-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      <span className="text-champagne-dark">{v.name}</span>
+                <h3 className="text-sm font-semibold text-gold mb-3">Available Venues ({venues.length})</h3>
+                <div className="space-y-3 max-h-48 overflow-y-auto">
+                  {venues.map((v) => (
+                    <div key={v.id} className="flex flex-col gap-1 py-2 border-b border-white/5 last:border-0">
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                        <span className="text-champagne-dark">{v.name}</span>
+                      </div>
+                      <div className="text-xs text-smoke pl-3.5">
+                        Limits: <span className="text-gold">{v.nip_limit} Nips</span> or <span className="text-gold">{v.beer_limit} Beers</span>
+                      </div>
                     </div>
                   ))}
-                  {partnerVenues.length > 6 && <p className="text-gold text-xs pt-1">+{partnerVenues.length - 6} more venues</p>}
+                  {venues.length === 0 && !loading && <p className="text-smoke text-xs">No verified venues yet.</p>}
                 </div>
               </GlassCard>
             </div>

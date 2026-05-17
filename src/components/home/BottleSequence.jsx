@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Environment, Preload } from '@react-three/drei';
+import { Environment, Preload, Lightformer } from '@react-three/drei';
 import AnimatedBottle from './AnimatedBottle';
 
 export default function BottleSequence({ membershipRef }) {
@@ -22,8 +22,15 @@ export default function BottleSequence({ membershipRef }) {
         
         <Suspense fallback={null}>
           <AnimatedBottle membershipRef={membershipRef} />
-          {/* Environment maps provide realistic reflections on the glass material */}
-          <Environment preset="city" />
+          {/* Procedural Environment map for realistic reflections without CDN loading lag */}
+          <Environment resolution={256}>
+            <group rotation={[-Math.PI / 2, 0, 0]}>
+              <Lightformer intensity={4} rotation-x={Math.PI / 2} position={[0, 5, -9]} scale={[10, 10, 1]} />
+              <Lightformer intensity={2} rotation-y={Math.PI / 2} position={[-5, 1, -1]} scale={[20, 0.1, 1]} />
+              <Lightformer rotation-y={Math.PI / 2} position={[-5, -1, -1]} scale={[20, 0.5, 1]} />
+              <Lightformer rotation-y={-Math.PI / 2} position={[10, 1, 0]} scale={[20, 1, 1]} />
+            </group>
+          </Environment>
           <Preload all />
         </Suspense>
       </Canvas>
