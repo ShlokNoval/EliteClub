@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Filter, Edit3, UserPlus, Eye, EyeOff, CreditCard, Lock } from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
@@ -11,10 +12,11 @@ import { useToast } from '../../components/common/Toast';
 import { formatDate, maskPhone, maskEmail } from '../../utils/helpers';
 
 export default function AdminUsers() {
+  const location = useLocation();
   const [users, setUsers] = useState([]);
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(location.state?.filter || 'all');
   const [viewMode, setViewMode] = useState('masked');
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState(false);
