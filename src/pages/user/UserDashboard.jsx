@@ -9,7 +9,7 @@ import Badge from '../../components/common/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency, formatDate } from '../../utils/helpers';
-import { membershipPlans, partnerVenues } from '../../data/mockData';
+import { membershipPlans, partnerVenues, brandInfo } from '../../data/mockData';
 import logo from '../../assets/logo.png';
 
 export default function UserDashboard() {
@@ -270,6 +270,32 @@ export default function UserDashboard() {
                     </div>
                   ))}
                   {venues.length === 0 && !loading && <p className="text-smoke text-xs">No verified venues yet.</p>}
+                </div>
+              </GlassCard>
+
+              {/* Technical Support */}
+              <GlassCard hover={false}>
+                <h3 className="text-sm font-semibold text-champagne mb-3">Support & Help</h3>
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-0.5 text-sm">
+                    <span className="text-smoke text-xs">Official Contact</span>
+                    <a href={`tel:${brandInfo.phone.replace(/\s/g, '')}`} className="text-gold hover:text-gold-light transition-colors">{brandInfo.phone}</a>
+                  </div>
+                  <div className="flex flex-col gap-0.5 text-sm border-t border-white/5 pt-2">
+                    <span className="text-smoke text-xs">Email</span>
+                    <a href={`mailto:${brandInfo.email}`} className="text-champagne hover:text-white transition-colors">{brandInfo.email}</a>
+                  </div>
+                  <div className="border-t border-white/5 pt-2 mt-2">
+                    <span className="text-smoke text-xs block mb-2">Technical Executives</span>
+                    <div className="space-y-2">
+                      {brandInfo.techSupport.map((support, i) => (
+                        <div key={i} className="flex justify-between items-center text-sm">
+                          <span className="text-champagne-dark">{support.name}</span>
+                          <a href={`tel:${support.phone.replace(/\s/g, '')}`} className="text-gold hover:text-gold-light transition-colors">{support.phone}</a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </GlassCard>
             </div>

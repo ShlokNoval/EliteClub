@@ -6,11 +6,15 @@
 export const brandInfo = {
   name: 'The Elite Club',
   tagline: 'Where Every Pour is a Privilege',
-  location: 'Chh. Sambhajinagar',
-  phone: '+91 98765 43210',
-  email: 'membership@theeliteclub.in',
+  location: 'S01 2nd Floor Khinvasara High Street, Ulkanagri, Garkheda area, Chh. Sambhajinagar 431009',
+  phone: '+91 77967 76692',
+  email: 'team.eliteclubcsn@gmail.com',
   website: 'www.theeliteclub.in',
   description: 'An exclusive membership-based liquor club offering premium experiences across partnered venues in Chh. Sambhajinagar.',
+  techSupport: [
+    { name: 'Parth Pawar', phone: '+91 9325058522' },
+    { name: 'Sarvesh Madiwale', phone: '+91 9356784119' }
+  ]
 };
 
 export const membershipPlans = [

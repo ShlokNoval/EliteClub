@@ -35,8 +35,7 @@ export default function ContactForm() {
 
       if (dbError) throw dbError;
 
-      // 2. Send Real Email via Web3Forms
-      // This sends the message directly to parthpawareliteclub@gmail.com
+      // This sends the message directly to the registered Web3Forms email
       const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: {
@@ -66,7 +65,7 @@ export default function ContactForm() {
       setTimeout(() => setSubmitted(false), 5000);
     } catch (err) {
       console.error('Contact form error:', err);
-      setError('Something went wrong. Please try emailing us directly at parthpawareliteclub@gmail.com');
+      setError(`Something went wrong. Please try emailing us directly at ${brandInfo.email}`);
     } finally {
       setSending(false);
     }
@@ -104,7 +103,7 @@ export default function ContactForm() {
             <div className="space-y-6">
               {[
                 { icon: Phone, label: 'Call Us', value: brandInfo.phone, href: `tel:${brandInfo.phone?.replace(/\s/g, '')}` },
-                { icon: Mail, label: 'Email Us', value: 'parthpawareliteclub@gmail.com', href: 'mailto:parthpawareliteclub@gmail.com' },
+                { icon: Mail, label: 'Email Us', value: brandInfo.email, href: `mailto:${brandInfo.email}` },
                 { icon: MapPin, label: 'Location', value: brandInfo.location },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4">
@@ -121,6 +120,23 @@ export default function ContactForm() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="pt-6 border-t border-gold/10">
+              <h4 className="font-playfair text-lg font-semibold text-champagne mb-4">Technical Support</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {brandInfo.techSupport.map((support, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gold/5 border border-gold/10 flex items-center justify-center shrink-0">
+                      <Phone size={14} className="text-gold" />
+                    </div>
+                    <div>
+                      <p className="text-champagne-dark text-xs font-medium">{support.name}</p>
+                      <a href={`tel:${support.phone.replace(/\s/g, '')}`} className="text-smoke text-xs hover:text-gold transition-colors">{support.phone}</a>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </motion.div>
 
