@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Building2, CreditCard, Menu, X, Crown, LogOut,
-  ScanLine, ClipboardList, ChevronLeft, Receipt, BarChart3, FileText, MapPin, MessageSquare, ShieldAlert
+  ScanLine, ClipboardList, ChevronLeft, Receipt, BarChart3, FileText, MapPin, MessageSquare, ShieldAlert, Calendar
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,6 +16,7 @@ const adminLinks = [
   { to: '/admin/bills', icon: Receipt, label: 'Bills' },
   { to: '/admin/approvals', icon: ShieldAlert, label: 'Approvals' },
   { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
+  { to: '/admin/events', icon: Calendar, label: 'Events' },
   { to: '/admin/messages', icon: MessageSquare, label: 'Messages' },
 ];
 

@@ -68,7 +68,7 @@ function c01(v){return Math.max(0,Math.min(1,v));}
 function mr(v,a,b,c,d){return c+(d-c)*c01((v-a)/(b-a));}
 function lp(a,b,t){return a+(b-a)*t;}
 
-export default function AnimatedBottle({ membershipRef }) {
+export default function AnimatedBottle({ membershipRef, isMobile = false }) {
   const groupRef = useRef();
   const capRef = useRef();
   const [popped, setPopped] = useState(false);
@@ -134,42 +134,45 @@ export default function AnimatedBottle({ membershipRef }) {
     if (mRaw > 0.001 && mRaw < 0.999) {
       // ── In MembershipReveal ──
       cVis = false; // Cap is already gone
-      y = -1.0;
+      y = isMobile ? -0.8 : -1.0;
       x = 0;
       rx = Math.PI * 4; // upright from the previous roll
       
-      s = m < 0.24 ? 0.55 : lp(0.55, 0, ei(mr(m, 0.24, 0.42, 0, 1)));
+      const maxScale = isMobile ? 0.45 : 0.55;
+      s = m < 0.24 ? maxScale : lp(maxScale, 0, ei(mr(m, 0.24, 0.42, 0, 1)));
       visible = mRaw < 0.44;
       
     } else if (bRaw > 0.001 && bRaw < 0.999) {
       // ── In Benefits ──
       cVis = false;
-      y = 0.0; 
+      y = isMobile ? -0.3 : 0.0; 
+      const benefitScale = isMobile ? 0.2 : 0.25;
       
       if (b < 0.2) {
         // Roll in from right
         const bt = mr(b, 0, 0.2, 0, 1);
-        s = lp(0, 0.25, ei(bt));
+        s = lp(0, benefitScale, ei(bt));
         x = lp(5, 0, ei(bt));
         rx = lp(Math.PI * 4, Math.PI * 8, ei(bt));
       } else if (b < 0.8) {
         // Stay in center
-        s = 0.25;
+        s = benefitScale;
         x = 0;
         rx = Math.PI * 8;
         ry = lp(-0.2, 0.2, (b - 0.2) / 0.6); // slight rotation side-to-side
       } else {
         // Roll out to left
         const bt = mr(b, 0.8, 1.0, 0, 1);
-        s = lp(0.25, 0, ei(bt));
+        s = lp(benefitScale, 0, ei(bt));
         x = lp(0, -5, ei(bt));
         rx = lp(Math.PI * 8, Math.PI * 12, ei(bt));
       }
     } else if (mRaw <= 0.001) {
       // ── In Hero or above Membership ──
-      s = 0.55;
-      y = 0.3 - (h * 1.3); // 0.3 down to -1.0
-      x = lp(4.0, 0, ei(h));
+      const maxScale = isMobile ? 0.45 : 0.55;
+      s = maxScale;
+      y = 0.3 - (h * (isMobile ? 1.1 : 1.3)); // 0.3 down to -0.8 or -1.0
+      x = lp(isMobile ? 0 : 4.0, 0, ei(h)); // Start in center on mobile
       rx = lp(0, Math.PI * 4, ei(h)); 
       
       // Cap fly-off physics

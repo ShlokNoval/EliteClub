@@ -28,7 +28,7 @@ export default function HotelVisits() {
   };
 
   const handleForceCheckout = async (visitId) => {
-    if (!window.confirm("Are you sure you want to force check-out this user?")) return;
+    if (!window.confirm("Are you sure you want to FORCE check-out this user without uploading a bill? This will not record their consumption.")) return;
     setCheckingOut(true);
     try {
       // 1. Update visit
@@ -98,7 +98,7 @@ export default function HotelVisits() {
                       disabled={checkingOut}
                       className="px-3 py-1 bg-red-400/10 text-red-400 border border-red-400/20 rounded-lg text-xs font-medium hover:bg-red-400/20 transition-colors cursor-pointer"
                     >
-                      {checkingOut ? '...' : 'Force Check-Out'}
+                      {checkingOut ? '...' : 'Force Check-out (No Bill)'}
                     </button>
                   )}
                   <Badge status="pending" />

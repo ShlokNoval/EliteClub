@@ -169,12 +169,8 @@ export default function HotelScanner() {
       if (openVisits && openVisits.length > 0) {
         const openVisit = openVisits[0];
         if (openVisit.hotel_id === hotel.id) {
-          // Check-out at same hotel
-          await supabase.from('visits')
-            .update({ check_out: new Date().toISOString(), status: 'closed' })
-            .eq('id', openVisit.id);
-          await logScan(cardId, member.id, 'check_out', 'valid');
-          setResult({ type: 'check_out', title: '✓ Checked Out', desc: `${member.full_name} has been checked out. Please proceed to upload the bill.`, member, visitId: openVisit.id });
+          // Check-out required via Bill Upload
+          setResult({ type: 'check_out', title: 'Check-out Required', desc: `${member.full_name} is ready to leave. Please go to Upload Bill to log their consumption and check them out.`, member, visitId: openVisit.id });
         } else {
           // Open visit at different hotel
           setResult({ type: 'blocked', title: 'Visit Open Elsewhere', desc: `${member.full_name} has an open visit at another venue. They must check out there first.`, member });

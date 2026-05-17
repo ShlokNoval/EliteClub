@@ -12,43 +12,63 @@ export default function AdminReports() {
   const [hotelStats, setHotelStats] = useState([]);
   const [memberStats, setMemberStats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [timeFilter, setTimeFilter] = useState('today'); // 'today', 'month', 'year', 'all'
 
-  useEffect(() => { fetchReports(); }, []);
+  useEffect(() => { fetchReports(); }, [timeFilter]);
 
   const fetchReports = async () => {
+    setLoading(true);
     try {
       const [hotelsRes, visitsRes, billsRes, membersRes] = await Promise.all([
         supabase.from('hotels').select('id, name, scan_count, status').eq('status', 'verified'),
-        supabase.from('visits').select('hotel_id, member_id, status'),
-        supabase.from('bills').select('hotel_id, member_id, food_bev_cost, liquor_cost_billed, savings'),
+        supabase.from('visits').select('hotel_id, member_id, status, check_in'),
+        supabase.from('bills').select('hotel_id, member_id, food_bev_cost, liquor_cost_billed, savings, created_at'),
         supabase.from('profiles').select('id, full_name, member_id, status, plan').eq('role', 'member'),
       ]);
 
       const hotels = hotelsRes.data || [];
-      const visits = visitsRes.data || [];
-      const bills = billsRes.data || [];
-      const members = membersRes.data || [];
+      let filteredVisits = visitsRes.data || [];
+      let filteredBills = billsRes.data || [];
+
+      if (timeFilter !== 'all') {
+        const now = new Date();
+        let startDate = new Date();
+        
+        if (timeFilter === 'today') {
+          startDate.setHours(0, 0, 0, 0);
+        } else if (timeFilter === 'month') {
+          startDate.setDate(1);
+          startDate.setHours(0, 0, 0, 0);
+        } else if (timeFilter === 'year') {
+          startDate.setMonth(0, 1);
+          startDate.setHours(0, 0, 0, 0);
+        }
+
+        filteredVisits = filteredVisits.filter(v => new Date(v.check_in) >= startDate);
+        filteredBills = filteredBills.filter(b => new Date(b.created_at) >= startDate);
+      }
 
       // Hotel-wise stats
       const hStats = hotels.map(h => {
-        const hVisits = visits.filter(v => v.hotel_id === h.id);
-        const hBills = bills.filter(b => b.hotel_id === h.id);
+        const hVisits = filteredVisits.filter(v => v.hotel_id === h.id);
+        const hBills = filteredBills.filter(b => b.hotel_id === h.id);
         const revenue = hBills.reduce((s, b) => s + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0);
         const savings = hBills.reduce((s, b) => s + Number(b.savings || 0), 0);
         return { name: h.name, visits: hVisits.length, bills: hBills.length, revenue, savings, scans: h.scan_count };
       });
 
       // Member-wise stats
-      const mStats = members.slice(0, 20).map(m => {
-        const mVisits = visits.filter(v => v.member_id === m.id);
-        const mBills = bills.filter(b => b.member_id === m.id);
+      const mStats = members.map(m => {
+        const mVisits = filteredVisits.filter(v => v.member_id === m.id);
+        const mBills = filteredBills.filter(b => b.member_id === m.id);
         const spent = mBills.reduce((s, b) => s + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0);
         const saved = mBills.reduce((s, b) => s + Number(b.savings || 0), 0);
         return { name: m.full_name, member_id: m.member_id, visits: mVisits.length, spent, saved, plan: m.plan, status: m.status };
       });
 
       setHotelStats(hStats);
-      setMemberStats(mStats);
+      // Sort members by spent amount and take top 20
+      setMemberStats(mStats.sort((a, b) => b.spent - a.spent).slice(0, 20));
     } catch (err) {
       console.error(err);
     } finally {
@@ -58,9 +78,21 @@ export default function AdminReports() {
 
   return (
     <PageTransition>
-      <div className="mb-8">
-        <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">Reports & <span className="text-gold-gradient">Analytics</span></h1>
-        <p className="text-smoke">Hotel-wise activity, revenue tracking, and exportable reports.</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">Reports & <span className="text-gold-gradient">Analytics</span></h1>
+          <p className="text-smoke">Hotel-wise activity, revenue tracking, and exportable reports.</p>
+        </div>
+        <select 
+          value={timeFilter} 
+          onChange={(e) => setTimeFilter(e.target.value)}
+          className="elite-input rounded-xl px-4 py-2 text-sm bg-black border border-gold/20"
+        >
+          <option value="today">Today</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+          <option value="all">All Time</option>
+        </select>
       </div>
 
       {/* Hotel Revenue Chart */}
