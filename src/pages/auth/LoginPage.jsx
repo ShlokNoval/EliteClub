@@ -21,9 +21,13 @@ export default function LoginPage() {
     if (!memberId.trim() || !password) return;
     setLoading(true);
     try {
-      await loginMember(memberId.trim(), password);
+      const { role } = await loginMember(memberId.trim(), password);
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      if (role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -59,7 +63,7 @@ export default function LoginPage() {
             Member Access
           </h1>
           <p className="text-smoke text-sm mt-2">
-            Sign in with your Membership ID and password
+            Sign in with your Membership ID or Email
           </p>
         </div>
 
@@ -67,7 +71,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="glass-strong rounded-2xl p-8 space-y-5">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-champagne-dark tracking-wide">
-              Membership ID <span className="text-burgundy-light ml-1">*</span>
+              Membership ID or Email <span className="text-burgundy-light ml-1">*</span>
             </label>
             <div className="relative">
               <Hash size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gold-muted" />
@@ -75,7 +79,7 @@ export default function LoginPage() {
                 type="text"
                 value={memberId}
                 onChange={(e) => setMemberId(e.target.value)}
-                placeholder="Enter your ID (e.g. K002098)"
+                placeholder="Enter ID or Email"
                 required
                 className="w-full elite-input rounded-xl px-4 py-3 text-sm pl-11"
               />
@@ -136,13 +140,6 @@ export default function LoginPage() {
               className="text-xs text-smoke hover:text-gold transition-colors underline underline-offset-4"
             >
               Hotel Portal
-            </Link>
-            <span className="text-ash">•</span>
-            <Link
-              to="/admin-login"
-              className="text-xs text-smoke hover:text-gold transition-colors underline underline-offset-4"
-            >
-              Admin
             </Link>
           </div>
         </div>

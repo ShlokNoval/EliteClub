@@ -3,8 +3,9 @@ import { Users, Crown, Building2, IndianRupee, ScanLine, TrendingUp } from 'luci
 import { motion } from 'framer-motion';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
+import Modal from '../../components/common/Modal';
 import { supabase } from '../../lib/supabase';
-import { formatCurrency } from '../../utils/helpers';
+import { formatCurrency, formatDate } from '../../utils/helpers';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -22,6 +23,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function AdminOverview() {
   const [stats, setStats] = useState({ totalUsers: 0, activeMembers: 0, totalHotels: 0, verifiedHotels: 0, totalScans: 0, totalRevenue: 0 });
   const [activity, setActivity] = useState([]);
+  const [activeVisits, setActiveVisits] = useState([]);
+  const [activeVisitsModal, setActiveVisitsModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [errorMsg, setErrorMsg] = useState(null);
@@ -32,11 +35,12 @@ export default function AdminOverview() {
 
   const fetchData = async () => {
     try {
-      const [profilesRes, hotelsRes, scansRes, billsRes] = await Promise.all([
+      const [profilesRes, hotelsRes, scansRes, billsRes, visitsRes] = await Promise.all([
         supabase.from('profiles').select('id, role, status').eq('role', 'member'),
         supabase.from('hotels').select('id, status'),
-        supabase.from('scans').select('id, created_at, result, card_id, scan_type').order('created_at', { ascending: false }).limit(1000),
+        supabase.from('scans').select('id, created_at, result, card_id, scan_type, hotels(name)').order('created_at', { ascending: false }).limit(1000),
         supabase.from('bills').select('food_bev_cost, liquor_cost_billed, created_at'),
+        supabase.from('visits').select('id, check_in, profiles(full_name, member_id), hotels(name)').eq('status', 'open').order('check_in', { ascending: false }),
       ]);
 
 
@@ -49,6 +53,9 @@ export default function AdminOverview() {
       const hotels = hotelsRes.data || [];
       const scans = scansRes.data || [];
       const bills = billsRes.data || [];
+      const activeVisitsData = visitsRes?.data || [];
+
+      setActiveVisits(activeVisitsData);
 
       const totalRevenue = bills.reduce((sum, b) => sum + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0);
 
@@ -66,7 +73,7 @@ export default function AdminOverview() {
         id: s.id,
         message: s.card_id === 'MANUAL'
           ? `Admin Manual Override — ${(s.scan_type || 'unknown').replace('_', ' ')}`
-          : `QR ${s.card_id} scanned — ${s.result} (${(s.scan_type || 'unknown').replace('_', ' ')})`,
+          : `QR ${s.card_id} scanned at ${s.hotels?.name || 'Unknown Venue'} — ${s.result} (${(s.scan_type || 'unknown').replace('_', ' ')})`,
         time: new Date(s.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
       })));
     } catch (err) {
@@ -80,8 +87,8 @@ export default function AdminOverview() {
 
   const statCards = [
     { icon: Users, label: 'Total Members', value: stats.totalUsers, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { icon: Crown, label: 'Active Members', value: stats.activeMembers, color: 'text-green-400', bg: 'bg-green-400/10' },
-    { icon: Building2, label: 'Hotels', value: `${stats.verifiedHotels}/${stats.totalHotels}`, color: 'text-gold', bg: 'bg-gold/10' },
+    { icon: Crown, label: 'Active Members', value: stats.activeMembers, color: 'text-green-400', bg: 'bg-green-400/10', onClick: () => setActiveVisitsModal(true) },
+    { icon: Building2, label: 'Hotels', value: `${stats.verifiedHotels}/${stats.totalHotels}`, color: 'text-gold', bg: 'bg-gold/10', onClick: () => setActiveVisitsModal(true) },
     { icon: IndianRupee, label: 'Total Revenue', value: formatCurrency(stats.totalRevenue), color: 'text-gold-light', bg: 'bg-gold-light/10' },
   ];
 
@@ -103,8 +110,8 @@ export default function AdminOverview() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         {statCards.map((stat, i) => (
-          <GlassCard key={i} delay={i * 0.1} className="p-5">
-            <div className="flex items-start justify-between">
+          <GlassCard key={i} delay={i * 0.1} className={`p-5 ${stat.onClick ? 'cursor-pointer hover:bg-white/5 transition-colors' : ''}`}>
+            <div className="flex items-start justify-between" onClick={stat.onClick}>
               <div>
                 <p className="text-smoke text-xs font-medium uppercase tracking-wider">{stat.label}</p>
                 <p className={`text-2xl font-bold mt-2 ${stat.color}`}>
@@ -151,6 +158,38 @@ export default function AdminOverview() {
           </div>
         )}
       </GlassCard>
+
+      {/* Active Visits Modal */}
+      <Modal isOpen={activeVisitsModal} onClose={() => setActiveVisitsModal(false)} title="Live Check-ins" size="lg">
+        <div className="space-y-4">
+          <p className="text-smoke text-sm">
+            Currently active check-ins across all partner venues.
+          </p>
+          {activeVisits.length === 0 ? (
+            <div className="text-center py-8 border border-white/10 rounded-xl bg-black/20">
+              <p className="text-smoke">No members are currently checked in.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+              {activeVisits.map((visit) => (
+                <div key={visit.id} className="p-4 rounded-xl border border-gold/15 bg-gold/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-champagne font-semibold">{visit.profiles?.full_name || 'Unknown Member'}</h4>
+                    <p className="text-gold text-xs font-mono mt-0.5">{visit.profiles?.member_id || 'N/A'}</p>
+                  </div>
+                  <div className="sm:text-right">
+                    <p className="text-champagne-dark text-sm flex items-center gap-1.5 sm:justify-end">
+                      <Building2 size={14} className="text-gold" />
+                      {visit.hotels?.name || 'Unknown Venue'}
+                    </p>
+                    <p className="text-smoke text-xs mt-1">Checked in: {formatDate(visit.check_in)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
     </PageTransition>
   );
 }

@@ -78,22 +78,45 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, [fetchUserData]);
 
-  // Member login: Member ID (e.g. K002098) + password
-  const loginMember = async (memberId, password) => {
-    const { data: email, error: lookupError } = await supabase
-      .rpc('get_email_by_member_id', { p_member_id: memberId.toUpperCase().trim() });
+  // Unified login: Member ID (e.g. K002098) OR Admin Email + password
+  const loginMember = async (identifier, password) => {
+    let email = identifier.trim();
 
-    if (lookupError || !email) {
-      throw new Error('Member ID not found. Please check your ID and try again.');
+    // If it doesn't look like an email, assume it's a Member ID
+    if (!email.includes('@')) {
+      const { data: lookedUpEmail, error: lookupError } = await supabase
+        .rpc('get_email_by_member_id', { p_member_id: email.toUpperCase() });
+
+      if (lookupError || !lookedUpEmail) {
+        throw new Error('Member ID not found. Please check your ID and try again.');
+      }
+      email = lookedUpEmail;
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error('Invalid password. Please try again.');
+    if (error) throw new Error('Invalid credentials. Please try again.');
+
+    // Determine role (to check if admin)
+    let role = 'member';
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profile) {
+        role = profile.role;
+      }
+    } catch (err) {
+      console.error('Error fetching role during login:', err);
+    }
 
     // Fetch profile data for the newly logged-in user
     setUser(data.user);
     await fetchUserData(data.user.id);
-    return data;
+    
+    return { data, role };
   };
 
   // Hotel login: email + password
