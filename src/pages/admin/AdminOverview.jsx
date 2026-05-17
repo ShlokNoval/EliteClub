@@ -91,7 +91,7 @@ export default function AdminOverview() {
 
   const statCards = [
     { icon: Users, label: 'Total Members', value: stats.totalUsers, color: 'text-blue-400', bg: 'bg-blue-400/10', onClick: () => navigate('/admin/users') },
-    { icon: Crown, label: 'Active Members', value: stats.activeMembers, color: 'text-green-400', bg: 'bg-green-400/10', onClick: () => navigate('/admin/users') },
+    { icon: Crown, label: 'Active Members', value: stats.activeMembers, color: 'text-green-400', bg: 'bg-green-400/10', onClick: () => navigate('/admin/users', { state: { filter: 'active' } }) },
     { icon: Building2, label: 'Hotels', value: `${stats.verifiedHotels}/${stats.totalHotels}`, color: 'text-gold', bg: 'bg-gold/10', onClick: () => navigate('/admin/hotels') },
     { icon: IndianRupee, label: 'Total Revenue', value: formatCurrency(stats.totalRevenue), color: 'text-gold-light', bg: 'bg-gold-light/10', onClick: () => navigate('/admin/bills') },
   ];
