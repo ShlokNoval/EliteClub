@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Crown, Mail, Phone, MapPin, Globe, Share2, ExternalLink } from 'lucide-react';
+import { Crown, Mail, Phone, MapPin, Globe } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { brandInfo } from '../../data/mockData';
 
@@ -67,20 +67,13 @@ export default function Footer() {
             </ul>
             {/* Social */}
             <div className="flex gap-3 mt-6">
-              {[
-                { Icon: Globe, label: 'Website' },
-                { Icon: Share2, label: 'Share' },
-                { Icon: ExternalLink, label: 'External Link' }
-              ].map(({ Icon, label }, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="w-10 h-10 rounded-lg border border-gold/15 flex items-center justify-center text-smoke hover:text-gold hover:border-gold/30 transition-all duration-300"
-                  aria-label={label}
-                >
-                  <Icon size={18} />
-                </a>
-              ))}
+              <a
+                href="#"
+                className="w-10 h-10 rounded-lg border border-gold/15 flex items-center justify-center text-smoke hover:text-gold hover:border-gold/30 transition-all duration-300"
+                aria-label="Social Link"
+              >
+                <Globe size={18} />
+              </a>
             </div>
           </div>
         </div>
