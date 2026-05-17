@@ -40,7 +40,7 @@ export default function Navbar() {
   return (
     <>
       <motion.nav
-        className="fixed top-0 left-0 right-0 z-50"
+        className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-white/5"
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}

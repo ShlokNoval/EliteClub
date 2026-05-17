@@ -125,12 +125,40 @@ export default function MembershipReveal({ sectionRef }) {
   // Progress bar
   const barScale = scrollYProgress;
 
+  if (isMobile) {
+    return (
+      <section id="membership" ref={sectionRef} className="py-24 bg-black-primary relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_50%_50%,_rgba(107,29,42,0.16)_0%,_transparent_70%)] pointer-events-none z-0"/>
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 z-20">
+          <div className="flex flex-col items-center gap-3 mb-12">
+            <div className="flex items-center gap-2 px-5 py-1.5 rounded-full border border-gold/25 bg-black/40 backdrop-blur-md">
+              <Crown size={13} className="text-gold"/>
+              <span className="text-[10px] sm:text-xs font-bold tracking-[0.28em] uppercase text-gold">Membership Plans</span>
+            </div>
+            <h2 className="font-playfair text-3xl font-bold text-center leading-tight">
+              <span className="text-champagne">Choose Your</span><br/>
+              <span className="text-gold-gradient">Privilege</span>
+            </h2>
+            <p className="text-smoke text-sm text-center max-w-sm leading-relaxed px-6">
+              Scroll to reveal your membership. Every pour, a statement.
+            </p>
+          </div>
+          <div className="flex flex-col gap-6">
+            {membershipPlans.map((plan, i) => (
+              <MembershipCard key={plan.id} plan={plan} i={i} animate={true} isMobile={isMobile} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       ref={sectionRef}
       id="membership"
       className="relative bg-black-primary"
-      style={{ height: isMobile ? '200vh' : '280vh' }}
+      style={{ height: '280vh' }}
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
 
