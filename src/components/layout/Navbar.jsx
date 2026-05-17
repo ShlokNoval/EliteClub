@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Crown } from 'lucide-react';
-import logo from '../../assets/logo.png';
+import logo2 from '../../assets/logo2.png';
 import Button from '../common/Button';
 
 const navLinks = [
@@ -51,7 +51,7 @@ export default function Navbar() {
             {/* Logo — floats freely, no background behind it */}
             <Link to="/" className="flex items-center shrink-0">
               <img
-                src={logo}
+                src={logo2}
                 alt="The Elite Club"
                 className="h-14 w-auto object-contain brightness-125 drop-shadow-[0_2px_14px_rgba(201,169,78,0.4)]"
               />
