@@ -133,64 +133,115 @@ export default function AnimatedBottle({ membershipRef, isMobile = false }) {
 
     if (mRaw > 0.001 && mRaw < 0.999) {
       // ── In MembershipReveal ──
-      cVis = false; // Cap is already gone
-      y = isMobile ? -0.5 : -1.0;
-      x = 0;
-      rx = Math.PI * 4; // upright from the previous roll
-      
-      const maxScale = isMobile ? 0.25 : 0.55;
-      s = m < 0.24 ? maxScale : lp(maxScale, 0, ei(mr(m, 0.24, 0.42, 0, 1)));
-      visible = mRaw < 0.44;
+      cVis = false;
+      rx = Math.PI * 4;
+
+      if (isMobile) {
+        // Sweep in from right, stay briefly, sweep out to left
+        if (m < 0.15) {
+          // Enter from right
+          const t = mr(m, 0, 0.15, 0, 1);
+          s = lp(0.25, 0.25, t);
+          x = lp(4.5, 0, ei(t));
+          y = -0.5;
+          rx = Math.PI * 4 + t * Math.PI * 2;
+        } else if (m < 0.42) {
+          // Visible centre
+          s = 0.25;
+          x = 0;
+          y = -0.5;
+        } else {
+          // Sweep out to left
+          const t = mr(m, 0.42, 0.65, 0, 1);
+          s = lp(0.25, 0, t);
+          x = lp(0, -4.5, ei(t));
+          y = -0.5;
+          rx = Math.PI * 4 + t * Math.PI * 2;
+        }
+        visible = m < 0.65;
+      } else {
+        y = -1.0;
+        x = 0;
+        const maxScale = 0.55;
+        s = m < 0.24 ? maxScale : lp(maxScale, 0, ei(mr(m, 0.24, 0.42, 0, 1)));
+        visible = mRaw < 0.44;
+      }
       
     } else if (bRaw > 0.001 && bRaw < 0.999) {
       // ── In Benefits ──
       cVis = false;
-      y = isMobile ? 0.5 : 0.0; 
-      const benefitScale = isMobile ? 0.15 : 0.25;
-      
-      if (b < 0.2) {
-        // Roll in from right
-        const bt = mr(b, 0, 0.2, 0, 1);
-        s = lp(0, benefitScale, ei(bt));
-        x = lp(5, isMobile ? 2.5 : 0, ei(bt));
-        rx = lp(Math.PI * 4, Math.PI * 8, ei(bt));
-      } else if (b < 0.8) {
-        // Stay in center (offset to right on mobile)
-        s = benefitScale;
-        x = isMobile ? 2.5 : 0;
-        rx = Math.PI * 8;
-        ry = lp(-0.2, 0.2, (b - 0.2) / 0.6); // slight rotation side-to-side
+      const benefitScale = isMobile ? 0.25 : 0.25;
+
+      if (isMobile) {
+        y = 0;
+        if (b < 0.15) {
+          // Enter from left
+          const t = mr(b, 0, 0.15, 0, 1);
+          s = lp(0, benefitScale, ei(t));
+          x = lp(-4.5, 0, ei(t));
+          rx = Math.PI * 8 + t * Math.PI * 2;
+        } else if (b < 0.55) {
+          // Visible centre
+          s = benefitScale;
+          x = 0;
+          rx = Math.PI * 8;
+          ry = lp(-0.2, 0.2, (b - 0.15) / 0.4);
+        } else if (b < 0.7) {
+          // Exit right
+          const t = mr(b, 0.55, 0.7, 0, 1);
+          s = lp(benefitScale, 0, ei(t));
+          x = lp(0, 4.5, ei(t));
+          rx = Math.PI * 8 + t * Math.PI * 2;
+        } else if (b < 0.85) {
+          // Hidden gap
+          visible = false;
+        } else {
+          // Final re-entry from left, then exit right
+          const t = mr(b, 0.85, 1.0, 0, 1);
+          s = lp(0, benefitScale, ei(Math.min(t * 2, 1)));
+          x = lp(-4.5, 4.5, ei(t));
+          rx = Math.PI * 10 + t * Math.PI * 2;
+        }
       } else {
-        // Roll out to left
-        const bt = mr(b, 0.8, 1.0, 0, 1);
-        s = lp(benefitScale, 0, ei(bt));
-        x = lp(isMobile ? 2.5 : 0, -5, ei(bt));
-        rx = lp(Math.PI * 8, Math.PI * 12, ei(bt));
+        y = 0.0;
+        if (b < 0.2) {
+          const bt = mr(b, 0, 0.2, 0, 1);
+          s = lp(0, benefitScale, ei(bt));
+          x = lp(5, 0, ei(bt));
+          rx = lp(Math.PI * 4, Math.PI * 8, ei(bt));
+        } else if (b < 0.8) {
+          s = benefitScale;
+          x = 0;
+          rx = Math.PI * 8;
+          ry = lp(-0.2, 0.2, (b - 0.2) / 0.6);
+        } else {
+          const bt = mr(b, 0.8, 1.0, 0, 1);
+          s = lp(benefitScale, 0, ei(bt));
+          x = lp(0, -5, ei(bt));
+          rx = lp(Math.PI * 8, Math.PI * 12, ei(bt));
+        }
       }
     } else if (mRaw <= 0.001) {
-      // ── In Hero or above Membership ──
-      const maxScale = isMobile ? 0.28 : 0.55;
-      s = maxScale;
-      y = isMobile ? 1.5 - (h * 2.5) : 0.3 - (h * 1.3);
-      
+      // ── In Hero ──
       if (isMobile) {
-        // Sweep completely off-screen (bounds are ~2.5, so 4.5 hides it)
-        const sweep = h * Math.PI * 5; // 2.5 full sweeps
-        x = Math.sin(sweep) * 4.5; 
-        rx = h * Math.PI * 8; // Tumbling effect
-        ry = Math.cos(sweep) * 0.5; // Tilt into movement
+        // Completely hidden on mobile hero to prevent overlapping content
+        visible = false;
+        cVis = false;
       } else {
+        const maxScale = 0.55;
+        s = maxScale;
+        y = 0.3 - (h * 1.3);
         x = lp(4.0, 0, ei(h));
-        rx = lp(0, Math.PI * 4, ei(h)); 
-      }
-      
-      // Cap fly-off physics
-      if (h > 0.05) {
-         const ct = c01((h - 0.05) / 0.15);
-         cy = lp(2.75, 10.0, ct);
-         crx = lp(0, Math.PI * 4, ct);
-         crz = lp(0, Math.PI * 2, ct);
-         cVis = ct < 0.99;
+        rx = lp(0, Math.PI * 4, ei(h));
+
+        // Cap fly-off physics
+        if (h > 0.05) {
+          const ct = c01((h - 0.05) / 0.15);
+          cy = lp(2.75, 10.0, ct);
+          crx = lp(0, Math.PI * 4, ct);
+          crz = lp(0, Math.PI * 2, ct);
+          cVis = ct < 0.99;
+        }
       }
     } else {
        // Between Membership and Benefits (e.g. AboutSection)
