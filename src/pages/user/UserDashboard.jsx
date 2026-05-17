@@ -193,6 +193,14 @@ export default function UserDashboard() {
                     <p className="text-smoke text-xs mt-1">Beers Consumed</p>
                   </div>
                 </div>
+                {(stats.nipsToday > 0 || stats.beersToday > 0) && (
+                  <div className="mt-3 px-3 py-2 rounded-lg bg-white/3 border border-white/5 text-center">
+                    <p className="text-xs text-smoke">
+                      Total equivalent: <span className="text-champagne font-semibold">{stats.nipsToday + (stats.beersToday / 2)} Nips</span> or <span className="text-gold font-semibold">{(stats.nipsToday * 2) + stats.beersToday} Beers</span>
+                      <span className="text-ash ml-1">(1 Nip = 2 Beers)</span>
+                    </p>
+                  </div>
+                )}
               </GlassCard>
             </div>
 
