@@ -16,6 +16,7 @@ export default function AdminEvents() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [interestedModalOpen, setInterestedModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [saving, setSaving] = useState(false);
   const toast = useToast();
 
   const [form, setForm] = useState({
