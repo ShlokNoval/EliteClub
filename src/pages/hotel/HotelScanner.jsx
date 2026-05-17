@@ -92,7 +92,7 @@ export default function HotelScanner() {
 
     try {
       // 1. Look up card
-      const { data: card } = await supabase.from('qr_cards').select('*, profiles:assigned_to(id, full_name, email, phone, plan, status, member_id, join_date, expiry_date)').eq('card_id', cardId).single();
+      const { data: card } = await supabase.from('qr_cards').select('*, profiles:assigned_to(id, full_name, email, phone, plan, status, member_id, join_date, expiry_date, unlimited_day_used_at)').eq('card_id', cardId).single();
 
       if (!card) {
         await logScan(cardId, null, 'check_in', 'not_found');
@@ -145,14 +145,16 @@ export default function HotelScanner() {
         }
 
         const nipLimit = hotel.nip_limit || 4;
+        const beerLimit = hotel.beer_limit || (nipLimit * 2);
         
         // 1 nip = 2 beers. So 1 beer = 0.5 nips.
         const equivalentNipsConsumed = totalNips + (totalBeers / 2);
+        const equivalentBeersConsumed = (totalNips * 2) + totalBeers;
         
         // If the consumed equivalent quota is equal or exceeds the venue limit, block check-in
         if (equivalentNipsConsumed >= nipLimit) {
           await logScan(cardId, member.id, 'check_in', 'blocked');
-          setResult({ type: 'blocked', title: 'Quota Exhausted', desc: `${member.full_name} has consumed their daily equivalent allowance (${totalNips} Nips, ${totalBeers} Beers) for this venue.`, member });
+          setResult({ type: 'blocked', title: 'Quota Exhausted', desc: `${member.full_name} has consumed their daily allowance — equivalent to ${equivalentNipsConsumed} / ${nipLimit} Nips (or ${equivalentBeersConsumed} / ${beerLimit} Beers).`, member });
           setScanning(false);
           return;
         }
@@ -200,6 +202,21 @@ export default function HotelScanner() {
     }
   };
 
+  // Calculate unlimited quota availability with 30-day cooldown
+  const getUnlimitedStatus = (unlimitedDayUsedAt) => {
+    if (!unlimitedDayUsedAt) return { canActivate: true, nextDate: null };
+    const usedDate = new Date(unlimitedDayUsedAt);
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    // Already active today
+    if (usedDate >= todayStart) return { canActivate: false, isActiveToday: true, nextDate: null };
+    // Check 30-day cooldown
+    const nextDate = new Date(usedDate);
+    nextDate.setDate(nextDate.getDate() + 30);
+    if (new Date() < nextDate) return { canActivate: false, isActiveToday: false, nextDate };
+    // Cooldown passed, can activate again
+    return { canActivate: true, nextDate: null };
+  };
+
   const executeCheckIn = async (member, cardId) => {
     try {
       const { data: newVisit } = await supabase.from('visits').insert({
@@ -211,10 +228,18 @@ export default function HotelScanner() {
       await logScan(cardId, member.id, 'check_in', 'valid');
       await supabase.from('hotels').update({ scan_count: (hotel.scan_count || 0) + 1 }).eq('id', hotel.id);
 
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-      const isUnlimitedToday = member.unlimited_day_used_at && new Date(member.unlimited_day_used_at) >= todayStart;
+      const unlimitedStatus = getUnlimitedStatus(member.unlimited_day_used_at);
 
-      setResult({ type: 'check_in', title: '✓ Checked In', desc: `${member.full_name} has been checked in successfully.`, member, visitId: newVisit?.id, showUnlimitedBtn: !isUnlimitedToday });
+      setResult({
+        type: 'check_in',
+        title: '✓ Checked In',
+        desc: `${member.full_name} has been checked in successfully.`,
+        member,
+        visitId: newVisit?.id,
+        showUnlimitedBtn: unlimitedStatus.canActivate,
+        unlimitedActiveToday: unlimitedStatus.isActiveToday,
+        unlimitedNextDate: unlimitedStatus.nextDate,
+      });
       setOtpStep(null);
     } catch (err) {
       toast.error('Failed to complete check-in');
@@ -357,12 +382,29 @@ export default function HotelScanner() {
                     </div>
                   )}
 
+                  {/* Unlimited Day Section */}
                   {result.showUnlimitedBtn && (
                     <div className="border-t border-white/5 pt-4 mt-4">
                       <Button variant="gold" size="sm" className="w-full" onClick={() => activateUnlimitedDay(result.member.id)} disabled={activatingUnlimited}>
                         {activatingUnlimited ? 'Activating...' : 'Activate 1-Day Unlimited'}
                       </Button>
-                      <p className="text-[10px] text-smoke mt-2">Bypasses all limits for today. Only usable once per membership.</p>
+                      <p className="text-[10px] text-smoke mt-2">Bypasses all limits for today. Available once every 30 days.</p>
+                    </div>
+                  )}
+                  {result.unlimitedActiveToday && (
+                    <div className="border-t border-white/5 pt-4 mt-4">
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-green-400/5 border border-green-400/10">
+                        <CheckCircle2 size={16} className="text-green-400 shrink-0" />
+                        <p className="text-green-400 text-sm font-medium">1-Day Unlimited is Active Today</p>
+                      </div>
+                    </div>
+                  )}
+                  {result.unlimitedNextDate && (
+                    <div className="border-t border-white/5 pt-4 mt-4">
+                      <div className="flex flex-col gap-1 p-3 rounded-xl bg-ash/5 border border-white/5">
+                        <p className="text-smoke text-sm font-medium">1-Day Unlimited on Cooldown</p>
+                        <p className="text-xs text-ash">Next available: <span className="text-champagne font-medium">{formatDate(result.unlimitedNextDate)}</span></p>
+                      </div>
                     </div>
                   )}
                 </GlassCard>
