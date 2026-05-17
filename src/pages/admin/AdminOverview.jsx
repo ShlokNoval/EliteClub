@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Modal from '../../components/common/Modal';
+import Button from '../../components/common/Button';
+import { useToast } from '../../components/common/Toast';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -23,6 +25,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function AdminOverview() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [stats, setStats] = useState({ totalUsers: 0, activeMembers: 0, totalHotels: 0, verifiedHotels: 0, totalScans: 0, totalRevenue: 0 });
   const [activity, setActivity] = useState([]);
   const [activeVisits, setActiveVisits] = useState([]);
@@ -96,6 +99,18 @@ export default function AdminOverview() {
       setErrorMsg(err.message || 'Unknown error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForceCheckout = async (visitId) => {
+    if (!window.confirm("Are you sure you want to force checkout this member?")) return;
+    try {
+      await supabase.from('visits').update({ check_out: new Date().toISOString(), status: 'closed' }).eq('id', visitId);
+      toast.success('Member forcefully checked out.');
+      // Real-time channel will automatically fetch the updated active visits list
+      fetchData(); 
+    } catch (err) {
+      toast.error('Failed to force checkout.');
     }
   };
 
@@ -242,8 +257,11 @@ export default function AdminOverview() {
                     <h4 className="text-champagne font-semibold">{visit.profiles?.full_name || 'Unknown Member'}</h4>
                     <p className="text-gold text-xs font-mono mt-0.5">{visit.profiles?.member_id || 'N/A'}</p>
                   </div>
-                  <div className="sm:text-right">
+                  <div className="sm:text-right flex flex-col items-end gap-2">
                     <p className="text-smoke text-xs mt-1">Checked in: {formatDate(visit.check_in)}</p>
+                    <Button variant="danger" size="sm" onClick={() => handleForceCheckout(visit.id)}>
+                      Force Checkout
+                    </Button>
                   </div>
                 </div>
               ))}

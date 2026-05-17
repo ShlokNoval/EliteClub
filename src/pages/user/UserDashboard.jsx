@@ -20,7 +20,11 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
 
   const plan = membershipPlans.find(p => p.id === profile?.plan);
-  const isActive = profile?.status === 'active';
+  
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const isDateExpired = profile?.expiry_date && new Date(profile.expiry_date) < todayStart;
+  const isActive = profile?.status === 'active' && !isDateExpired;
 
   useEffect(() => {
     if (profile?.id) fetchStats();
@@ -28,8 +32,10 @@ export default function UserDashboard() {
 
   const fetchStats = async () => {
     try {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      // Auto-expire in database if date has passed
+      if (profile.status === 'active' && isDateExpired) {
+         await supabase.from('profiles').update({ status: 'expired' }).eq('id', profile.id);
+      }
 
       const [visitsRes, billsRes, hotelsRes] = await Promise.all([
         supabase.from('visits').select('id').eq('member_id', profile.id),
