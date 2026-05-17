@@ -34,6 +34,17 @@ export default function AdminOverview() {
 
   useEffect(() => {
     fetchData();
+
+    // Subscribe to real-time changes
+    const channel = supabase.channel('admin_overview_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scans' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bills' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {
