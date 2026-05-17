@@ -74,6 +74,10 @@ export default function AdminUsers() {
 
       const authUserId = userId;
 
+      const joinDate = new Date();
+      const expiryDate = new Date(joinDate);
+      expiryDate.setDate(joinDate.getDate() + 30);
+
       // Create profile
       const { error: profileError } = await supabase.from('profiles').insert({
         id: authUserId,
@@ -85,7 +89,8 @@ export default function AdminUsers() {
         plan: newUser.plan,
         card_id: newUser.card_id,
         member_id: newUser.card_id,
-        join_date: new Date().toISOString(),
+        join_date: joinDate.toISOString(),
+        expiry_date: expiryDate.toISOString(),
       });
       if (profileError) throw profileError;
 
@@ -340,6 +345,10 @@ export default function AdminUsers() {
                 <option value="dainik">Dainik (Legacy)</option>
                 <option value="decka">Decka (Legacy)</option>
               </select>
+            </div>
+            <div className="space-y-2 col-span-2">
+              <label className="block text-sm font-medium text-champagne-dark">Expiry Date</label>
+              <input type="date" value={editForm.expiry_date ? editForm.expiry_date.split('T')[0] : ''} onChange={e => setEditForm(p => ({ ...p, expiry_date: new Date(e.target.value).toISOString() }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
             </div>
           </div>
           <div className="flex items-center justify-between border-t border-white/5 pt-4">
