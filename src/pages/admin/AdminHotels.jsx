@@ -28,7 +28,19 @@ export default function AdminHotels() {
   const [loading, setLoading] = useState(true);
   const toast = useToast();
 
-  useEffect(() => { fetchHotels(); }, []);
+  useEffect(() => {
+    fetchHotels();
+
+    // Subscribe to real-time changes
+    const channel = supabase.channel('admin_hotels_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, () => fetchHotels())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scans' }, () => fetchHotels())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchHotels = async () => {
     const todayStart = new Date();
