@@ -147,7 +147,8 @@ export default function AdminEvents() {
           <p className="text-smoke">No events found. Create one to get started.</p>
         ) : (
           events.map((evt, i) => {
-            const interestedCount = evt.event_responses?.filter(r => r.status === 'interested').length || 0;
+            const responses = evt.event_responses || [];
+            const interestedCount = responses.filter(r => r.status === 'interested').length;
             return (
               <motion.div key={evt.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <GlassCard hover={false} className="h-full flex flex-col justify-between">
@@ -232,12 +233,12 @@ export default function AdminEvents() {
       <Modal 
         isOpen={interestedModalOpen} 
         onClose={() => { setInterestedModalOpen(false); setSelectedEvent(null); }} 
-        title={`Interested Members (${selectedEvent?.event_responses?.filter(r => r.status === 'interested').length || 0})`} 
+        title={`Interested Members (${(selectedEvent?.event_responses || []).filter(r => r.status === 'interested').length})`} 
         size="md"
       >
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3">
-          {selectedEvent?.event_responses?.filter(r => r.status === 'interested').length > 0 ? (
-            selectedEvent.event_responses
+          {selectedEvent && (selectedEvent.event_responses || []).filter(r => r.status === 'interested').length > 0 ? (
+            (selectedEvent.event_responses || [])
               .filter(r => r.status === 'interested' && r.profiles)
               .map((r, idx) => (
                 <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/10">
