@@ -25,6 +25,9 @@ export default function HotelBillUpload() {
 
   const fetchData = async () => {
     try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
       // Get open visits
       const { data: visits } = await supabase.from('visits')
         .select('id, member_id, check_in, check_out, profiles:member_id(full_name, member_id, unlimited_day_used_at)')
