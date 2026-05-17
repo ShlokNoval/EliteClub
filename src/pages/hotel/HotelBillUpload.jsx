@@ -16,6 +16,7 @@ export default function HotelBillUpload() {
   const [form, setForm] = useState({ food_bev_cost: '', liquor_cost_original: '', liquor_cost_billed: '', nips_consumed: '', beers_consumed: '' });
   const [billImage, setBillImage] = useState(null);
   const [notes, setNotes] = useState('');
+  const [markUnlimited, setMarkUnlimited] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recentBills, setRecentBills] = useState([]);
@@ -28,7 +29,7 @@ export default function HotelBillUpload() {
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
 
       const { data: visits } = await supabase.from('visits')
-        .select('id, member_id, check_in, check_out, profiles:member_id(full_name, member_id)')
+        .select('id, member_id, check_in, check_out, profiles:member_id(full_name, member_id, unlimited_day_used_at)')
         .eq('hotel_id', hotel.id)
         .eq('status', 'closed')
         .gte('check_in', todayStart.toISOString())
@@ -95,11 +96,17 @@ export default function HotelBillUpload() {
 
       if (error) throw error;
 
+      // Update unlimited_day_used_at if checked
+      if (markUnlimited) {
+        await supabase.from('profiles').update({ unlimited_day_used_at: new Date().toISOString() }).eq('id', visit.member_id);
+      }
+
       toast.success('Bill uploaded successfully!');
       setSelectedVisit('');
       setForm({ food_bev_cost: '', liquor_cost_original: '', liquor_cost_billed: '', nips_consumed: '', beers_consumed: '' });
       setBillImage(null);
       setNotes('');
+      setMarkUnlimited(false);
       fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to upload bill.');
@@ -107,6 +114,22 @@ export default function HotelBillUpload() {
       setSaving(false);
     }
   };
+
+  const selectedVisitObj = closedVisits.find(v => v.id === Number(selectedVisit));
+  
+  let canUseUnlimited = true;
+  let nextUnlimitedDate = null;
+  if (selectedVisitObj?.profiles?.unlimited_day_used_at) {
+     const usedDate = new Date(selectedVisitObj.profiles.unlimited_day_used_at);
+     const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+     if (usedDate < todayStart) { // Not already used today
+        nextUnlimitedDate = new Date(usedDate);
+        nextUnlimitedDate.setMonth(nextUnlimitedDate.getMonth() + 1);
+        if (new Date() < nextUnlimitedDate) {
+           canUseUnlimited = false;
+        }
+     }
+  }
 
   return (
     <PageTransition>
@@ -123,7 +146,7 @@ export default function HotelBillUpload() {
           {/* Select Visit */}
           <div className="space-y-2 mb-4">
             <label className="block text-sm font-medium text-champagne-dark">Select Visit *</label>
-            <select value={selectedVisit} onChange={e => setSelectedVisit(e.target.value)} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
+            <select value={selectedVisit} onChange={e => { setSelectedVisit(e.target.value); setMarkUnlimited(false); }} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
               <option value="">Choose a completed visit...</option>
               {closedVisits.map(v => (
                 <option key={v.id} value={v.id}>
@@ -163,6 +186,23 @@ export default function HotelBillUpload() {
               <input type="number" step="any" value={form.beers_consumed} onChange={e => setForm(p => ({ ...p, beers_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
             </div>
           </div>
+
+          {/* Mark Unlimited */}
+          {selectedVisitObj && canUseUnlimited && (
+            <div className="flex items-center gap-3 mb-4 p-4 rounded-xl bg-champagne/5 border border-champagne/10">
+              <input type="checkbox" id="markUnlimited" checked={markUnlimited} onChange={e => setMarkUnlimited(e.target.checked)} className="w-5 h-5 accent-gold cursor-pointer" />
+              <label htmlFor="markUnlimited" className="text-sm font-medium text-champagne-dark cursor-pointer">
+                Mark as 1-Day Unlimited Quota
+                <p className="text-smoke text-xs font-normal mt-0.5">Check this if the member used their monthly unlimited consumption day today.</p>
+              </label>
+            </div>
+          )}
+          {selectedVisitObj && !canUseUnlimited && nextUnlimitedDate && (
+            <div className="mb-4 p-4 rounded-xl bg-ash/5 border border-white/5">
+               <p className="text-sm font-medium text-smoke flex items-center gap-2"><Wine size={14}/> 1-Day Unlimited Quota Unavailable</p>
+               <p className="text-xs text-ash mt-0.5">Next available: {new Date(nextUnlimitedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+            </div>
+          )}
 
           {/* Savings preview */}
           {savings > 0 && (

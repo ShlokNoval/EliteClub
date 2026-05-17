@@ -214,15 +214,42 @@ export default function UserDashboard() {
                   <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold font-medium">{plan?.name || '—'}</span></div>
                   <div className="flex justify-between"><span className="text-smoke">Member Since</span><span className="text-champagne">{formatDate(profile.join_date)}</span></div>
                   <div className="flex flex-col gap-1 border-t border-white/5 pt-3 mt-3">
-                    <div className="flex justify-between">
-                      <span className="text-smoke flex items-center gap-1"><Wine size={12}/> 1-Day Unlimited</span>
-                      <span className={profile.unlimited_day_used_at ? "text-ash" : "text-green-400 font-medium"}>
-                        {profile.unlimited_day_used_at ? `Used on ${formatDate(profile.unlimited_day_used_at)}` : "Available Today"}
-                      </span>
+                    <div className="flex justify-between items-start">
+                      <span className="text-smoke flex items-center gap-1 mt-0.5"><Wine size={12}/> 1-Day Unlimited</span>
+                      {(() => {
+                        let statusText = "Available Today";
+                        let isAvailable = true;
+                        let nextDate = null;
+                        
+                        if (profile.unlimited_day_used_at) {
+                          const usedDate = new Date(profile.unlimited_day_used_at);
+                          const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+                          
+                          if (usedDate >= todayStart) {
+                            statusText = "Active Today";
+                          } else {
+                            nextDate = new Date(usedDate);
+                            nextDate.setMonth(nextDate.getMonth() + 1);
+                            
+                            if (new Date() < nextDate) {
+                              isAvailable = false;
+                              statusText = "Used on " + formatDate(profile.unlimited_day_used_at);
+                            }
+                          }
+                        }
+                        
+                        return (
+                          <div className="text-right">
+                             <span className={isAvailable ? "text-green-400 font-medium" : "text-ash"}>
+                               {statusText}
+                             </span>
+                             {!isAvailable && nextDate && (
+                               <div className="text-[10px] text-smoke mt-1">Next available: {formatDate(nextDate)}</div>
+                             )}
+                          </div>
+                        );
+                      })()}
                     </div>
-                    {profile.unlimited_day_used_at && (
-                      <span className="text-[10px] text-smoke text-right">Available again upon next renewal</span>
-                    )}
                   </div>
                 </div>
               </GlassCard>
