@@ -36,8 +36,18 @@ export default function ScanPage() {
 
       if (data) {
         setCard(data);
-        setMember(data.profiles || null);
-        if (data.profiles) await checkVisitStatus(data.profiles.id);
+        let profileData = data.profiles;
+        
+        if (profileData && profileData.status === 'active' && profileData.expiry_date) {
+            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+            if (new Date(profileData.expiry_date) < todayStart) {
+                await supabase.from('profiles').update({ status: 'expired' }).eq('id', profileData.id);
+                profileData.status = 'expired';
+            }
+        }
+
+        setMember(profileData || null);
+        if (profileData) await checkVisitStatus(profileData.id);
       }
     } catch (err) {
       console.error(err);

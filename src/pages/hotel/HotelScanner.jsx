@@ -110,7 +110,15 @@ export default function HotelScanner() {
 
       const member = card.profiles;
 
-      // 2. Check member status
+      // 2. Check member status & Auto-Expire
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const isDateExpired = member.expiry_date && new Date(member.expiry_date) < todayStart;
+
+      if (member.status === 'active' && isDateExpired) {
+         await supabase.from('profiles').update({ status: 'expired' }).eq('id', member.id);
+         member.status = 'expired';
+      }
+
       if (member.status !== 'active') {
         await logScan(cardId, member.id, 'check_in', 'expired');
         setResult({ type: 'expired', title: 'Membership Inactive', desc: `${member.full_name}'s membership is ${member.status}.`, member });
@@ -119,7 +127,7 @@ export default function HotelScanner() {
       }
 
       // 3. Quota Math (Global Daily Consumption)
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      // (todayStart is already defined above)
       const isUnlimitedToday = member.unlimited_day_used_at && new Date(member.unlimited_day_used_at) >= todayStart;
 
       if (!isUnlimitedToday) {
