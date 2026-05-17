@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, Upload, IndianRupee, Camera, Eye } from 'lucide-react';
+import { Receipt, Upload, IndianRupee, Camera, Eye, Wine, CheckCircle2 } from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Button from '../../components/common/Button';
@@ -119,14 +119,22 @@ export default function HotelBillUpload() {
   
   let canUseUnlimited = true;
   let nextUnlimitedDate = null;
+  let unlimitedActiveToday = false;
   if (selectedVisitObj?.profiles?.unlimited_day_used_at) {
      const usedDate = new Date(selectedVisitObj.profiles.unlimited_day_used_at);
      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-     if (usedDate < todayStart) { // Not already used today
+     if (usedDate >= todayStart) {
+        // Already activated today — don't show checkbox, show active status
+        canUseUnlimited = false;
+        unlimitedActiveToday = true;
+     } else {
+        // Check 30-day cooldown
         nextUnlimitedDate = new Date(usedDate);
-        nextUnlimitedDate.setMonth(nextUnlimitedDate.getMonth() + 1);
+        nextUnlimitedDate.setDate(nextUnlimitedDate.getDate() + 30);
         if (new Date() < nextUnlimitedDate) {
            canUseUnlimited = false;
+        } else {
+           nextUnlimitedDate = null; // Cooldown passed, reset
         }
      }
   }
@@ -193,13 +201,19 @@ export default function HotelBillUpload() {
               <input type="checkbox" id="markUnlimited" checked={markUnlimited} onChange={e => setMarkUnlimited(e.target.checked)} className="w-5 h-5 accent-gold cursor-pointer" />
               <label htmlFor="markUnlimited" className="text-sm font-medium text-champagne-dark cursor-pointer">
                 Mark as 1-Day Unlimited Quota
-                <p className="text-smoke text-xs font-normal mt-0.5">Check this if the member used their monthly unlimited consumption day today.</p>
+                <p className="text-smoke text-xs font-normal mt-0.5">Check this if the member used their unlimited consumption day today. Available once every 30 days.</p>
               </label>
             </div>
           )}
-          {selectedVisitObj && !canUseUnlimited && nextUnlimitedDate && (
+          {selectedVisitObj && unlimitedActiveToday && (
+            <div className="mb-4 p-4 rounded-xl bg-green-400/5 border border-green-400/10 flex items-center gap-2">
+               <CheckCircle2 size={16} className="text-green-400 shrink-0" />
+               <p className="text-sm font-medium text-green-400">1-Day Unlimited is Active Today</p>
+            </div>
+          )}
+          {selectedVisitObj && !canUseUnlimited && !unlimitedActiveToday && nextUnlimitedDate && (
             <div className="mb-4 p-4 rounded-xl bg-ash/5 border border-white/5">
-               <p className="text-sm font-medium text-smoke flex items-center gap-2"><Wine size={14}/> 1-Day Unlimited Quota Unavailable</p>
+               <p className="text-sm font-medium text-smoke flex items-center gap-2"><Wine size={14}/> 1-Day Unlimited on Cooldown</p>
                <p className="text-xs text-ash mt-0.5">Next available: {new Date(nextUnlimitedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
             </div>
           )}

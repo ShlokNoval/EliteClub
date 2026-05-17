@@ -229,7 +229,7 @@ export default function UserDashboard() {
                             statusText = "Active Today";
                           } else {
                             nextDate = new Date(usedDate);
-                            nextDate.setMonth(nextDate.getMonth() + 1);
+                            nextDate.setDate(nextDate.getDate() + 30);
                             
                             if (new Date() < nextDate) {
                               isAvailable = false;
