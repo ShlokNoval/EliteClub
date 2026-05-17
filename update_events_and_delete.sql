@@ -61,7 +61,12 @@ BEGIN
   SET status = 'available', assigned_to = NULL, assigned_at = NULL 
   WHERE assigned_to = p_user_id;
 
-  -- 2. Delete the user from auth.users (cascades to profiles)
+  -- 2. Nullify foreign keys in scans, visits, and bills to avoid FK violations
+  UPDATE scans SET member_id = NULL WHERE member_id = p_user_id;
+  UPDATE visits SET member_id = (SELECT id FROM profiles WHERE role = 'admin' LIMIT 1) WHERE member_id = p_user_id;
+  DELETE FROM bills WHERE member_id = p_user_id;
+
+  -- 3. Delete the user from auth.users (cascades to profiles)
   DELETE FROM auth.users WHERE id = p_user_id;
 END;
 $$;

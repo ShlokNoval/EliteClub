@@ -87,7 +87,7 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
           {/* Top Row */}
           <div className="flex items-start justify-between mb-4">
             <img src={logo} alt="EliteClub" className="h-10 w-auto" />
-            <span className="text-xs text-gold font-semibold tracking-[0.15em] uppercase bg-gold/10 border border-gold/20 px-3 py-1 rounded-full">
+            <span className="text-xs text-gold font-semibold tracking-[0.15em] uppercase bg-gold/10 border border-gold/20 px-3 py-1.5 rounded-full text-center leading-tight">
               {user.plan ? `${user.plan} Member` : 'Member'}
             </span>
           </div>
