@@ -156,11 +156,11 @@ export default function HotelBillUpload() {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Nips Consumed</label>
-              <input type="number" value={form.nips_consumed} onChange={e => setForm(p => ({ ...p, nips_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+              <input type="number" step="any" value={form.nips_consumed} onChange={e => setForm(p => ({ ...p, nips_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Beers Consumed</label>
-              <input type="number" value={form.beers_consumed} onChange={e => setForm(p => ({ ...p, beers_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
+              <input type="number" step="any" value={form.beers_consumed} onChange={e => setForm(p => ({ ...p, beers_consumed: e.target.value }))} placeholder="0" className="w-full elite-input rounded-xl px-4 py-3 text-sm" />
             </div>
           </div>
 

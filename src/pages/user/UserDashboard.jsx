@@ -51,10 +51,12 @@ export default function UserDashboard() {
         setVenues(hotels);
       } else {
         const availableVenues = hotels.filter(v => {
-          // A venue is available if the user hasn't exhausted BOTH the nip limit AND the beer limit
-          const hasNipsLeft = nipsToday < (v.nip_limit || 4);
-          const hasBeersLeft = beersToday < (v.beer_limit || 8);
-          return hasNipsLeft || hasBeersLeft;
+          // 1 nip = 2 beers. So 1 beer = 0.5 nips.
+          // Calculate total consumption in "equivalent nips"
+          const equivalentNipsConsumed = nipsToday + (beersToday / 2);
+          
+          // Venue is available if the consumed equivalent is less than the limit
+          return equivalentNipsConsumed < (v.nip_limit || 4);
         });
         setVenues(availableVenues);
       }
