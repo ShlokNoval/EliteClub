@@ -22,8 +22,13 @@ export default function AdminHotels() {
   const [editModal, setEditModal] = useState(false);
   const [activeVisits, setActiveVisits] = useState([]);
   const [todayScans, setTodayScans] = useState([]);
-  const [visitsModal, setVisitsModal] = useState(false);
-  const [selectedHotelVisits, setSelectedHotelVisits] = useState(null);
+  
+  // New History States
+  const [historyModal, setHistoryModal] = useState(false);
+  const [selectedHotelHistory, setSelectedHotelHistory] = useState(null);
+  const [historyTimeFilter, setHistoryTimeFilter] = useState('today');
+  const [historyData, setHistoryData] = useState({ visits: [], scanCount: 0, loading: false });
+
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
@@ -41,6 +46,50 @@ export default function AdminHotels() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const fetchHotelHistory = async (hotelId, filter) => {
+    setHistoryData(prev => ({ ...prev, loading: true }));
+    try {
+      let startDate = new Date();
+      if (filter === 'today') {
+        startDate.setHours(0, 0, 0, 0);
+      } else if (filter === 'month') {
+        startDate.setDate(1); startDate.setHours(0, 0, 0, 0);
+      } else if (filter === 'year') {
+        startDate.setMonth(0, 1); startDate.setHours(0, 0, 0, 0);
+      } else {
+        startDate = new Date(0); // All time
+      }
+
+      const [visitsRes, scansRes] = await Promise.all([
+        supabase.from('visits')
+          .select('id, check_in, check_out, status, profiles(full_name, member_id)')
+          .eq('hotel_id', hotelId)
+          .gte('check_in', startDate.toISOString())
+          .order('check_in', { ascending: false }),
+        supabase.from('scans')
+          .select('id', { count: 'exact', head: true })
+          .eq('hotel_id', hotelId)
+          .gte('created_at', startDate.toISOString())
+      ]);
+
+      setHistoryData({
+        visits: visitsRes.data || [],
+        scanCount: scansRes.count || 0,
+        loading: false
+      });
+    } catch (err) {
+      console.error(err);
+      setHistoryData(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (historyModal && selectedHotelHistory) {
+      fetchHotelHistory(selectedHotelHistory.id, historyTimeFilter);
+    }
+  }, [historyTimeFilter, historyModal, selectedHotelHistory]);
+
 
   const fetchHotels = async () => {
     const todayStart = new Date();
@@ -198,7 +247,7 @@ export default function AdminHotels() {
                 {h.status === 'verified' && (
                   <>
                     <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setSelected(h); setQuotas({ nip_limit: h.nip_limit || 4, beer_limit: h.beer_limit || 8 }); setEditModal(true); }}>Quotas</Button>
-                    <Button variant="gold" size="sm" className="flex-1" onClick={() => { setSelectedHotelVisits(h); setVisitsModal(true); }}>View Members</Button>
+                    <Button variant="gold" size="sm" className="flex-1" onClick={() => { setSelectedHotelHistory(h); setHistoryModal(true); setHistoryTimeFilter('today'); }}>History & Scans</Button>
                   </>
                 )}
                 {h.status === 'rejected' && <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setApproveTarget(h); setQuotas({ nip_limit: 4, beer_limit: 8 }); setApproveModal(true); }}>Review & Approve</Button>}
@@ -268,29 +317,72 @@ export default function AdminHotels() {
         )}
       </Modal>
 
-      {/* Live Check-ins Modal */}
-      <Modal isOpen={visitsModal} onClose={() => { setVisitsModal(false); setSelectedHotelVisits(null); }} title={selectedHotelVisits ? `Live Check-ins: ${selectedHotelVisits.name}` : ''} size="lg">
+      {/* History Modal */}
+      <Modal isOpen={historyModal} onClose={() => { setHistoryModal(false); setSelectedHotelHistory(null); }} title={selectedHotelHistory ? `Activity History: ${selectedHotelHistory.name}` : ''} size="lg">
         <div className="space-y-4">
-          <p className="text-smoke text-sm">
-            Elite Members currently verified and checked into this venue.
-          </p>
-          {selectedHotelVisits && activeVisits.filter(v => v.hotel_id === selectedHotelVisits.id).length === 0 ? (
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <p className="text-smoke text-sm">
+              Comprehensive scan and check-in history.
+            </p>
+            <select 
+              value={historyTimeFilter} 
+              onChange={(e) => setHistoryTimeFilter(e.target.value)}
+              className="elite-input rounded-xl px-4 py-2 text-sm bg-black border border-gold/20"
+            >
+              <option value="today">Today</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <div className="p-3 bg-black/40 border border-white/5 rounded-xl text-center">
+              <p className="text-xl font-bold text-champagne">{historyData.loading ? '-' : historyData.scanCount}</p>
+              <p className="text-xs text-smoke">Total Scans</p>
+            </div>
+            <div className="p-3 bg-black/40 border border-white/5 rounded-xl text-center">
+              <p className="text-xl font-bold text-champagne">{historyData.loading ? '-' : historyData.visits.length}</p>
+              <p className="text-xs text-smoke">Total Visits</p>
+            </div>
+            <div className="p-3 bg-black/40 border border-white/5 rounded-xl text-center">
+              <p className="text-xl font-bold text-green-400">{historyData.loading ? '-' : historyData.visits.filter(v => v.status === 'open').length}</p>
+              <p className="text-xs text-smoke">Active</p>
+            </div>
+            <div className="p-3 bg-black/40 border border-white/5 rounded-xl text-center">
+              <p className="text-xl font-bold text-ash">{historyData.loading ? '-' : historyData.visits.filter(v => v.status === 'closed').length}</p>
+              <p className="text-xs text-smoke">Completed</p>
+            </div>
+          </div>
+
+          {historyData.loading ? (
+             <div className="text-center py-8"><p className="text-smoke">Loading history...</p></div>
+          ) : historyData.visits.length === 0 ? (
             <div className="text-center py-8 border border-white/10 rounded-xl bg-black/20">
-              <p className="text-smoke">No members are currently checked in here.</p>
+              <p className="text-smoke">No visits found in this timeframe.</p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-              {selectedHotelVisits && activeVisits.filter(v => v.hotel_id === selectedHotelVisits.id).map((visit) => (
-                <div key={visit.id} className="p-4 rounded-xl border border-gold/15 bg-gold/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+              {historyData.visits.map((visit) => (
+                <div key={visit.id} className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${visit.status === 'open' ? 'border-green-400/20 bg-green-400/5' : 'border-white/5 bg-black/40'}`}>
                   <div>
-                    <h4 className="text-champagne font-semibold">{visit.profiles?.full_name || 'Unknown Member'}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-champagne font-semibold">{visit.profiles?.full_name || 'Unknown Member'}</h4>
+                      {visit.status === 'open' && <span className="text-[10px] bg-green-400/20 text-green-400 px-2 py-0.5 rounded-full border border-green-400/30">Active</span>}
+                    </div>
                     <p className="text-gold text-xs font-mono mt-0.5">{visit.profiles?.member_id || 'N/A'}</p>
                   </div>
-                  <div className="sm:text-right">
-                    <p className="text-smoke text-xs mt-1 flex items-center gap-1.5 sm:justify-end">
+                  <div className="sm:text-right space-y-1">
+                    <p className="text-smoke text-xs flex items-center gap-1.5 sm:justify-end">
                       <Clock size={12} className="text-gold" />
-                      Checked in: {formatDate(visit.check_in)}
+                      In: {formatDate(visit.check_in)}
                     </p>
+                    {visit.status === 'closed' && visit.check_out && (
+                      <p className="text-ash text-xs flex items-center gap-1.5 sm:justify-end">
+                        <Clock size={12} className="text-ash" />
+                        Out: {formatDate(visit.check_out)}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
