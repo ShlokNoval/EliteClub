@@ -6,6 +6,7 @@ import { ToastProvider } from './components/common/Toast';
 import LoadingScreen from './components/common/LoadingScreen';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import BackToTop from './components/common/BackToTop';
+import { Analytics } from '@vercel/analytics/react';
 
 // Layouts (Lazy)
 const PublicLayout = lazy(() => import('./layouts/PublicLayout'));
@@ -102,6 +103,7 @@ function App() {
             </AnimatePresence>
           </Suspense>
           <BackToTop />
+          <Analytics />
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
