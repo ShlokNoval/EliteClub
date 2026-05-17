@@ -14,7 +14,8 @@ export default function AdminEvents() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [interestedModalOpen, setInterestedModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const toast = useToast();
 
   const [form, setForm] = useState({
@@ -36,7 +37,10 @@ export default function AdminEvents() {
         .from('events')
         .select(`
           *,
-          event_responses(status)
+          event_responses(
+            status,
+            profiles(full_name, phone, member_id)
+          )
         `)
         .order('date', { ascending: true });
 
@@ -163,9 +167,15 @@ export default function AdminEvents() {
                     )}
                   </div>
                   <div className="border-t border-white/5 pt-4 mt-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-gold bg-gold/10 px-3 py-1.5 rounded-lg border border-gold/20">
+                    <button 
+                      onClick={() => {
+                        setSelectedEvent(evt);
+                        setInterestedModalOpen(true);
+                      }}
+                      className="flex items-center gap-2 text-sm text-gold bg-gold/10 hover:bg-gold/20 px-3 py-1.5 rounded-lg border border-gold/20 transition-colors cursor-pointer"
+                    >
                       <Users size={16} /> <span>{interestedCount} Interested</span>
-                    </div>
+                    </button>
                     <div className="flex gap-2">
                       <button onClick={() => handleOpenModal(evt)} className="p-2 rounded-lg bg-white/5 text-smoke hover:text-gold transition-colors">
                         <Edit3 size={16} />
@@ -215,6 +225,36 @@ export default function AdminEvents() {
             </Button>
             <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Interested Members Modal */}
+      <Modal 
+        isOpen={interestedModalOpen} 
+        onClose={() => { setInterestedModalOpen(false); setSelectedEvent(null); }} 
+        title={`Interested Members (${selectedEvent?.event_responses?.filter(r => r.status === 'interested').length || 0})`} 
+        size="md"
+      >
+        <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3">
+          {selectedEvent?.event_responses?.filter(r => r.status === 'interested').length > 0 ? (
+            selectedEvent.event_responses
+              .filter(r => r.status === 'interested' && r.profiles)
+              .map((r, idx) => (
+                <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/10">
+                  <div>
+                    <p className="text-champagne font-semibold text-sm">{r.profiles.full_name}</p>
+                    <p className="text-ash text-xs">{r.profiles.member_id || 'No ID'}</p>
+                  </div>
+                  {r.profiles.phone && (
+                    <a href={`tel:${r.profiles.phone}`} className="text-gold hover:text-gold-light text-sm bg-gold/10 px-3 py-1 rounded-full">
+                      {r.profiles.phone}
+                    </a>
+                  )}
+                </div>
+              ))
+          ) : (
+            <p className="text-smoke text-sm text-center py-4">No members have marked interested yet.</p>
+          )}
         </div>
       </Modal>
     </PageTransition>
