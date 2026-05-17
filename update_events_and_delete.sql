@@ -24,22 +24,28 @@ ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_responses ENABLE ROW LEVEL SECURITY;
 
 -- Events Policies
+DROP POLICY IF EXISTS "events_admin_all" ON events;
 CREATE POLICY "events_admin_all" ON events FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
 
+DROP POLICY IF EXISTS "events_member_select" ON events;
 CREATE POLICY "events_member_select" ON events FOR SELECT
   USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'member'));
 
 -- Event Responses Policies
+DROP POLICY IF EXISTS "responses_admin_all" ON event_responses;
 CREATE POLICY "responses_admin_all" ON event_responses FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
 
+DROP POLICY IF EXISTS "responses_member_select" ON event_responses;
 CREATE POLICY "responses_member_select" ON event_responses FOR SELECT
   USING (member_id = auth.uid());
 
+DROP POLICY IF EXISTS "responses_member_insert" ON event_responses;
 CREATE POLICY "responses_member_insert" ON event_responses FOR INSERT
   WITH CHECK (member_id = auth.uid());
 
+DROP POLICY IF EXISTS "responses_member_update" ON event_responses;
 CREATE POLICY "responses_member_update" ON event_responses FOR UPDATE
   USING (member_id = auth.uid());
 
