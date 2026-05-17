@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Crown, Mail, Phone, MapPin, Instagram } from 'lucide-react';
+import { Crown, Mail, Phone, MapPin, Globe } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { brandInfo } from '../../data/mockData';
 
@@ -70,9 +70,9 @@ export default function Footer() {
               <a
                 href="#"
                 className="w-10 h-10 rounded-lg border border-gold/15 flex items-center justify-center text-smoke hover:text-gold hover:border-gold/30 transition-all duration-300"
-                aria-label="Instagram"
+                aria-label="Social Link"
               >
-                <Instagram size={18} />
+                <Globe size={18} />
               </a>
             </div>
           </div>
