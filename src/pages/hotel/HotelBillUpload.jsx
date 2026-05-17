@@ -25,15 +25,12 @@ export default function HotelBillUpload() {
 
   const fetchData = async () => {
     try {
-      // Get closed visits without bills (today)
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-
+      // Get open visits
       const { data: visits } = await supabase.from('visits')
         .select('id, member_id, check_in, check_out, profiles:member_id(full_name, member_id, unlimited_day_used_at)')
         .eq('hotel_id', hotel.id)
-        .eq('status', 'closed')
-        .gte('check_in', todayStart.toISOString())
-        .order('check_out', { ascending: false });
+        .eq('status', 'open')
+        .order('check_in', { ascending: false });
 
       // Get bills for today to exclude visits that already have bills
       const { data: todayBills } = await supabase.from('bills')
@@ -43,7 +40,7 @@ export default function HotelBillUpload() {
 
       const billedVisitIds = new Set((todayBills || []).map(b => b.visit_id));
       const unbilled = (visits || []).filter(v => !billedVisitIds.has(v.id));
-      setClosedVisits(unbilled);
+      setClosedVisits(unbilled); // Re-using state variable name, but it now holds open visits
 
       // Recent bills
       const { data: bills } = await supabase.from('bills')
@@ -96,6 +93,16 @@ export default function HotelBillUpload() {
 
       if (error) throw error;
 
+      // Close the visit and log check-out scan
+      await supabase.from('visits').update({ check_out: new Date().toISOString(), status: 'closed' }).eq('id', Number(selectedVisit));
+      await supabase.from('scans').insert({
+        card_id: 'BILL_CHECKOUT',
+        hotel_id: hotel.id,
+        member_id: visit.member_id,
+        scan_type: 'check_out',
+        result: 'valid'
+      });
+
       // Update unlimited_day_used_at if checked
       if (markUnlimited) {
         await supabase.from('profiles').update({ unlimited_day_used_at: new Date().toISOString() }).eq('id', visit.member_id);
@@ -142,8 +149,8 @@ export default function HotelBillUpload() {
   return (
     <PageTransition>
       <div className="mb-8">
-        <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">Upload <span className="text-gold-gradient">Bill</span></h1>
-        <p className="text-smoke">Upload bills for completed visits and record costs.</p>
+        <h1 className="font-playfair text-3xl font-bold text-champagne mb-1">Upload Bill & <span className="text-gold-gradient">Checkout</span></h1>
+        <p className="text-smoke">Upload bills for active visits to record costs and check out the member.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -153,9 +160,9 @@ export default function HotelBillUpload() {
 
           {/* Select Visit */}
           <div className="space-y-2 mb-4">
-            <label className="block text-sm font-medium text-champagne-dark">Select Visit *</label>
+            <label className="block text-sm font-medium text-champagne-dark">Select Active Visit *</label>
             <select value={selectedVisit} onChange={e => { setSelectedVisit(e.target.value); setMarkUnlimited(false); }} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
-              <option value="">Choose a completed visit...</option>
+              <option value="">Choose an active visit to checkout...</option>
               {closedVisits.map(v => (
                 <option key={v.id} value={v.id}>
                   {v.profiles?.full_name} ({v.profiles?.member_id}) — {new Date(v.check_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
@@ -163,7 +170,7 @@ export default function HotelBillUpload() {
               ))}
             </select>
             {closedVisits.length === 0 && !loading && (
-              <p className="text-ash text-xs">No unbilled visits today. Check out a member first.</p>
+              <p className="text-ash text-xs">No active visits found. Members need to check in first.</p>
             )}
           </div>
 
@@ -254,7 +261,7 @@ export default function HotelBillUpload() {
           </div>
 
           <Button variant="gold" size="lg" icon={Upload} className="w-full" onClick={handleSubmit} disabled={saving || !selectedVisit}>
-            {saving ? 'Uploading...' : 'Upload Bill'}
+            {saving ? 'Processing...' : 'Upload Bill & Checkout'}
           </Button>
         </GlassCard>
 

@@ -17,6 +17,7 @@ export default function UserDashboard() {
   const [showCard, setShowCard] = useState(true);
   const [stats, setStats] = useState({ visits: 0, totalSaved: 0, totalSpent: 0, nipsToday: 0, beersToday: 0 });
   const [venues, setVenues] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const plan = membershipPlans.find(p => p.id === profile?.plan);
@@ -41,10 +42,14 @@ export default function UserDashboard() {
         supabase.from('visits').select('id').eq('member_id', profile.id),
         supabase.from('bills').select('food_bev_cost, liquor_cost_billed, savings, nips_consumed, beers_consumed, created_at').eq('member_id', profile.id),
         supabase.from('hotels').select('id, name, nip_limit, beer_limit').eq('status', 'verified').order('name'),
+        supabase.from('events').select(`*, event_responses(status, member_id)`).eq('status', 'active').order('date', { ascending: true })
       ]);
       const visits = visitsRes.data || [];
       const bills = billsRes.data || [];
       const hotels = hotelsRes.data || [];
+      const activeEvents = eventsRes.data || [];
+
+      setEvents(activeEvents);
 
       const todaysBills = bills.filter(b => new Date(b.created_at) >= todayStart);
       const nipsToday = todaysBills.reduce((s, b) => s + (b.nips_consumed || 0), 0);
@@ -78,6 +83,31 @@ export default function UserDashboard() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEventRSVP = async (eventId, status) => {
+    try {
+      // Check if response exists
+      const { data: existing } = await supabase.from('event_responses')
+        .select('id').eq('event_id', eventId).eq('member_id', profile.id).single();
+
+      if (existing) {
+        await supabase.from('event_responses').update({ status }).eq('id', existing.id);
+      } else {
+        await supabase.from('event_responses').insert({ event_id: eventId, member_id: profile.id, status });
+      }
+
+      // Update local state
+      setEvents(prev => prev.map(e => {
+        if (e.id === eventId) {
+          const others = e.event_responses.filter(r => r.member_id !== profile.id);
+          return { ...e, event_responses: [...others, { status, member_id: profile.id }] };
+        }
+        return e;
+      }));
+    } catch (err) {
+      console.error('Failed to RSVP', err);
     }
   };
 
@@ -202,6 +232,46 @@ export default function UserDashboard() {
                   </div>
                 )}
               </GlassCard>
+
+              {/* Upcoming Events */}
+              {events.length > 0 && (
+                <GlassCard hover={false}>
+                  <h3 className="font-playfair text-lg font-semibold text-champagne mb-4 flex items-center gap-2">
+                    <Calendar size={20} className="text-gold" /> Upcoming Events
+                  </h3>
+                  <div className="space-y-4">
+                    {events.map((evt) => {
+                      const userResponse = evt.event_responses?.find(r => r.member_id === profile.id)?.status;
+                      
+                      return (
+                        <div key={evt.id} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                          <h4 className="text-champagne font-semibold mb-1">{evt.title}</h4>
+                          <div className="space-y-1 mb-3">
+                            <p className="text-smoke text-xs flex items-center gap-2"><Calendar size={12} className="text-gold"/> {formatDate(evt.date)}</p>
+                            <p className="text-smoke text-xs flex items-center gap-2"><MapPin size={12} className="text-gold"/> {evt.location}</p>
+                          </div>
+                          {evt.description && <p className="text-ash text-xs mb-3">{evt.description}</p>}
+                          
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleEventRSVP(evt.id, 'interested')}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${userResponse === 'interested' ? 'bg-gold text-black' : 'bg-gold/10 text-gold hover:bg-gold/20'}`}
+                            >
+                              Interested
+                            </button>
+                            <button 
+                              onClick={() => handleEventRSVP(evt.id, 'not_interested')}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${userResponse === 'not_interested' ? 'bg-white/20 text-white' : 'bg-white/5 text-smoke hover:bg-white/10'}`}
+                            >
+                              Not Interested
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </GlassCard>
+              )}
             </div>
 
             {/* Right Column */}

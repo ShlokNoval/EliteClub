@@ -148,6 +148,24 @@ export default function AdminUsers() {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!window.confirm(`Are you sure you want to PERMANENTLY DELETE ${editForm.full_name}? This will remove their account and free up card ${editForm.card_id}.`)) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc('admin_delete_member', {
+        p_user_id: editForm.id
+      });
+      if (error) throw error;
+      toast.success('Member deleted and card freed successfully!');
+      setEditModal(false);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete member.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleReassignCard = async () => {
     if (!window.confirm("This will permanently mark the current card as SUSPENDED and assign a new available card. Continue?")) return;
     
@@ -363,6 +381,9 @@ export default function AdminUsers() {
           <div className="flex justify-between items-center pb-2">
             <button onClick={handleResetPassword} className="text-xs text-smoke hover:text-champagne transition-colors cursor-pointer flex items-center gap-1">
               <Lock size={12} /> Reset Password
+            </button>
+            <button onClick={handleDeleteUser} disabled={saving} className="text-xs text-red-500 hover:text-red-400 transition-colors cursor-pointer font-medium border-b border-transparent hover:border-red-400">
+              Delete Member
             </button>
           </div>
           <div className="flex gap-3 pt-2">

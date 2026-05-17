@@ -34,6 +34,7 @@ const AdminBills = lazy(() => import('./pages/admin/AdminBills'));
 const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
 const AdminMessages = lazy(() => import('./pages/admin/AdminMessages'));
 const AdminApprovals = lazy(() => import('./pages/admin/AdminApprovals'));
+const AdminEvents = lazy(() => import('./pages/admin/AdminEvents'));
 
 // Hotel (Lazy)
 const HotelOverview = lazy(() => import('./pages/hotel/HotelOverview'));
@@ -85,6 +86,7 @@ function App() {
                   <Route path="/admin/reports" element={<AdminReports />} />
                   <Route path="/admin/messages" element={<AdminMessages />} />
                   <Route path="/admin/approvals" element={<AdminApprovals />} />
+                  <Route path="/admin/events" element={<AdminEvents />} />
                 </Route>
 
                 {/* Hotel Dashboard (protected) */}

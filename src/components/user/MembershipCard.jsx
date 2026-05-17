@@ -4,8 +4,25 @@ import { Eye, EyeOff, Crown } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { formatDate } from '../../utils/helpers';
 import { getQRScanUrl } from '../../lib/qrConfig';
+import { toPng } from 'html-to-image';
+import { useRef } from 'react';
 
 export default function MembershipCard({ user, isActive, showCard, onToggle }) {
+  const cardRef = useRef(null);
+
+  const handleDownload = async () => {
+    if (cardRef.current === null) return;
+    try {
+      const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 3 });
+      const link = document.createElement('a');
+      link.download = `${user.full_name || 'Member'}_EliteClub_Card.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to download card', err);
+    }
+  };
+
   if (!isActive) {
     return (
       <motion.div
@@ -33,18 +50,29 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
         <h3 className="font-playfair text-lg font-semibold text-champagne">
           Your Membership Card
         </h3>
-        <button
-          onClick={onToggle}
-          className="flex items-center gap-2 text-sm text-gold hover:text-gold-light transition-colors cursor-pointer"
-        >
-          {showCard ? <EyeOff size={16} /> : <Eye size={16} />}
-          {showCard ? 'Hide Card' : 'Show Card'}
-        </button>
+        <div className="flex items-center gap-4">
+          {showCard && (
+            <button
+              onClick={handleDownload}
+              className="text-xs text-champagne hover:text-white transition-colors"
+            >
+              Download
+            </button>
+          )}
+          <button
+            onClick={onToggle}
+            className="flex items-center gap-2 text-sm text-gold hover:text-gold-light transition-colors cursor-pointer"
+          >
+            {showCard ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showCard ? 'Hide Card' : 'Show Card'}
+          </button>
+        </div>
       </div>
 
       {showCard && (
         <motion.div
-          className="membership-card rounded-2xl p-6 sm:p-8 cursor-pointer transition-shadow"
+          ref={cardRef}
+          className="membership-card rounded-2xl p-6 sm:p-8 cursor-pointer transition-shadow relative"
           initial={{ opacity: 0, rotateY: -90 }}
           animate={{ opacity: 1, rotateY: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
