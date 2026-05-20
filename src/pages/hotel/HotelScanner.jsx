@@ -20,6 +20,21 @@ const resultStyles = {
   check_out: { icon: CheckCircle2, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
 };
 
+// Calculate unlimited quota availability with 30-day cooldown
+const getUnlimitedStatus = (unlimitedDayUsedAt) => {
+  if (!unlimitedDayUsedAt) return { canActivate: true, nextDate: null };
+  const usedDate = new Date(unlimitedDayUsedAt);
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  // Already active today
+  if (usedDate >= todayStart) return { canActivate: false, isActiveToday: true, nextDate: null };
+  // Check 30-day cooldown
+  const nextDate = new Date(usedDate);
+  nextDate.setDate(nextDate.getDate() + 30);
+  if (new Date() < nextDate) return { canActivate: false, isActiveToday: false, nextDate };
+  // Cooldown passed, can activate again
+  return { canActivate: true, nextDate: null };
+};
+
 export default function HotelScanner() {
   const { hotel } = useAuth();
   const toast = useToast();
@@ -151,7 +166,16 @@ export default function HotelScanner() {
         // Check nips and beers independently against their respective limits
         if (totalNips >= nipLimit || totalBeers >= beerLimit) {
           await logScan(cardId, member.id, 'check_in', 'blocked');
-          setResult({ type: 'blocked', title: 'Quota Exhausted', desc: `${member.full_name} has consumed their daily allowance — ${totalNips} / ${nipLimit} Nips and ${totalBeers} / ${beerLimit} Beers.`, member });
+          const unlimitedStatus = getUnlimitedStatus(member.unlimited_day_used_at);
+          setResult({ 
+            type: 'blocked', 
+            title: 'Quota Exhausted', 
+            desc: `${member.full_name} has consumed their daily allowance — ${totalNips} / ${nipLimit} Nips and ${totalBeers} / ${beerLimit} Beers.`, 
+            member,
+            showUnlimitedBtn: unlimitedStatus.canActivate,
+            unlimitedActiveToday: unlimitedStatus.isActiveToday,
+            unlimitedNextDate: unlimitedStatus.nextDate
+          });
           setScanning(false);
           return;
         }
@@ -193,21 +217,6 @@ export default function HotelScanner() {
       setResult({ type: 'invalid', title: 'Error', desc: err.message });
       setScanning(false);
     }
-  };
-
-  // Calculate unlimited quota availability with 30-day cooldown
-  const getUnlimitedStatus = (unlimitedDayUsedAt) => {
-    if (!unlimitedDayUsedAt) return { canActivate: true, nextDate: null };
-    const usedDate = new Date(unlimitedDayUsedAt);
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    // Already active today
-    if (usedDate >= todayStart) return { canActivate: false, isActiveToday: true, nextDate: null };
-    // Check 30-day cooldown
-    const nextDate = new Date(usedDate);
-    nextDate.setDate(nextDate.getDate() + 30);
-    if (new Date() < nextDate) return { canActivate: false, isActiveToday: false, nextDate };
-    // Cooldown passed, can activate again
-    return { canActivate: true, nextDate: null };
   };
 
   const executeCheckIn = async (member, cardId) => {

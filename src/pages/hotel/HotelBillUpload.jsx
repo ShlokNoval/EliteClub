@@ -16,7 +16,6 @@ export default function HotelBillUpload() {
   const [form, setForm] = useState({ food_bev_cost: '', liquor_cost_original: '', liquor_cost_billed: '', nips_consumed: '', beers_consumed: '' });
   const [billImage, setBillImage] = useState(null);
   const [notes, setNotes] = useState('');
-  const [markUnlimited, setMarkUnlimited] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recentBills, setRecentBills] = useState([]);
@@ -106,17 +105,13 @@ export default function HotelBillUpload() {
         result: 'valid'
       });
 
-      // Update unlimited_day_used_at if checked
-      if (markUnlimited) {
-        await supabase.from('profiles').update({ unlimited_day_used_at: new Date().toISOString() }).eq('id', visit.member_id);
-      }
+
 
       toast.success('Bill uploaded successfully!');
       setSelectedVisit('');
       setForm({ food_bev_cost: '', liquor_cost_original: '', liquor_cost_billed: '', nips_consumed: '', beers_consumed: '' });
       setBillImage(null);
       setNotes('');
-      setMarkUnlimited(false);
       fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to upload bill.');
@@ -127,27 +122,7 @@ export default function HotelBillUpload() {
 
   const selectedVisitObj = closedVisits.find(v => v.id === Number(selectedVisit));
   
-  let canUseUnlimited = true;
-  let nextUnlimitedDate = null;
-  let unlimitedActiveToday = false;
-  if (selectedVisitObj?.profiles?.unlimited_day_used_at) {
-     const usedDate = new Date(selectedVisitObj.profiles.unlimited_day_used_at);
-     const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-     if (usedDate >= todayStart) {
-        // Already activated today — don't show checkbox, show active status
-        canUseUnlimited = false;
-        unlimitedActiveToday = true;
-     } else {
-        // Check 30-day cooldown
-        nextUnlimitedDate = new Date(usedDate);
-        nextUnlimitedDate.setDate(nextUnlimitedDate.getDate() + 30);
-        if (new Date() < nextUnlimitedDate) {
-           canUseUnlimited = false;
-        } else {
-           nextUnlimitedDate = null; // Cooldown passed, reset
-        }
-     }
-  }
+
 
   return (
     <PageTransition>
@@ -164,7 +139,7 @@ export default function HotelBillUpload() {
           {/* Select Visit */}
           <div className="space-y-2 mb-4">
             <label className="block text-sm font-medium text-champagne-dark">Select Active Visit *</label>
-            <select value={selectedVisit} onChange={e => { setSelectedVisit(e.target.value); setMarkUnlimited(false); }} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
+            <select value={selectedVisit} onChange={e => setSelectedVisit(e.target.value)} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
               <option value="">Choose an active visit to checkout...</option>
               {closedVisits.map(v => (
                 <option key={v.id} value={v.id}>
@@ -219,28 +194,6 @@ export default function HotelBillUpload() {
             </div>
           )}
 
-          {/* Mark Unlimited */}
-          {selectedVisitObj && canUseUnlimited && (
-            <div className="flex items-center gap-3 mb-4 p-4 rounded-xl bg-champagne/5 border border-champagne/10">
-              <input type="checkbox" id="markUnlimited" checked={markUnlimited} onChange={e => setMarkUnlimited(e.target.checked)} className="w-5 h-5 accent-gold cursor-pointer" />
-              <label htmlFor="markUnlimited" className="text-sm font-medium text-champagne-dark cursor-pointer">
-                Mark as 1-Day Unlimited Quota
-                <p className="text-smoke text-xs font-normal mt-0.5">Check this if the member used their unlimited consumption day today. Available once every 30 days.</p>
-              </label>
-            </div>
-          )}
-          {selectedVisitObj && unlimitedActiveToday && (
-            <div className="mb-4 p-4 rounded-xl bg-green-400/5 border border-green-400/10 flex items-center gap-2">
-               <CheckCircle2 size={16} className="text-green-400 shrink-0" />
-               <p className="text-sm font-medium text-green-400">1-Day Unlimited is Active Today</p>
-            </div>
-          )}
-          {selectedVisitObj && !canUseUnlimited && !unlimitedActiveToday && nextUnlimitedDate && (
-            <div className="mb-4 p-4 rounded-xl bg-ash/5 border border-white/5">
-               <p className="text-sm font-medium text-smoke flex items-center gap-2"><Wine size={14}/> 1-Day Unlimited on Cooldown</p>
-               <p className="text-xs text-ash mt-0.5">Next available: {new Date(nextUnlimitedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-            </div>
-          )}
 
           {/* Savings preview */}
           {savings > 0 && (
