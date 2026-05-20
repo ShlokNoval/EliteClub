@@ -131,7 +131,8 @@ export default function HotelScanner() {
       const isDateExpired = member.expiry_date && new Date(member.expiry_date) < todayStart;
 
       if (member.status === 'active' && isDateExpired) {
-         await supabase.from('profiles').update({ status: 'expired' }).eq('id', member.id);
+         const { error: expErr } = await supabase.from('profiles').update({ status: 'expired' }).eq('id', member.id);
+         if (expErr) console.error("Error auto-expiring profile:", expErr);
          member.status = 'expired';
       }
 
@@ -230,7 +231,8 @@ export default function HotelScanner() {
       }).select().single();
 
       await logScan(cardId, member.id, 'check_in', 'valid');
-      await supabase.from('hotels').update({ scan_count: (hotel.scan_count || 0) + 1 }).eq('id', hotel.id);
+      const { error: hotelUpdateErr } = await supabase.from('hotels').update({ scan_count: (hotel.scan_count || 0) + 1 }).eq('id', hotel.id);
+      if (hotelUpdateErr) console.error("Error updating hotel scan count:", hotelUpdateErr);
 
       // Fetch fresh unlimited status directly from DB to avoid stale data
       const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', member.id).single();
@@ -290,7 +292,14 @@ export default function HotelScanner() {
         }
       }
 
-      await supabase.from('profiles').update({ unlimited_day_used_at: new Date().toISOString() }).eq('id', memberId);
+      const { data: updateData, error: updateErr } = await supabase.from('profiles').update({ unlimited_day_used_at: new Date().toISOString() }).eq('id', memberId).select();
+      if (updateErr || !updateData || updateData.length === 0) {
+        console.error("Error updating unlimited day:", updateErr || "0 rows updated (RLS blocked)");
+        toast.error('Database update failed. Check permissions.');
+        setActivatingUnlimited(false);
+        return;
+      }
+      
       toast.success('Unlimited Day Activated!');
       setResult(prev => ({ ...prev, showUnlimitedBtn: false, unlimitedActiveToday: true, desc: prev.desc + ' (Unlimited Day Active)' }));
     } catch (err) {
