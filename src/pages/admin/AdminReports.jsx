@@ -10,9 +10,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export default function AdminReports() {
   const [hotelStats, setHotelStats] = useState([]);
-  const [memberStats, setMemberStats] = useState([]);
+  const [allMemberStats, setAllMemberStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState('today'); // 'today', 'month', 'year', 'all'
+  const [selectedHotelExport, setSelectedHotelExport] = useState('all');
+  const [memberSearch, setMemberSearch] = useState('');
+  const [showAllMembers, setShowAllMembers] = useState(false);
 
   useEffect(() => { fetchReports(); }, [timeFilter]);
 
@@ -68,8 +71,7 @@ export default function AdminReports() {
       });
 
       setHotelStats(hStats);
-      // Sort members by spent amount and take top 20
-      setMemberStats(mStats.sort((a, b) => b.spent - a.spent).slice(0, 20));
+      setAllMemberStats(mStats.sort((a, b) => b.spent - a.spent));
     } catch (err) {
       console.error(err);
     } finally {
@@ -99,9 +101,24 @@ export default function AdminReports() {
       {/* Hotel Revenue Chart */}
       {hotelStats.length > 0 && (
         <GlassCard hover={false} className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
             <h3 className="text-champagne font-semibold flex items-center gap-2"><Building2 size={18} className="text-gold" /> Hotel-wise Revenue</h3>
-            <Button variant="ghost" size="sm" icon={Download} onClick={() => exportToCSV(hotelStats, 'hotel_report.csv')}>Export</Button>
+            <div className="flex items-center gap-3">
+              <select 
+                value={selectedHotelExport} 
+                onChange={(e) => setSelectedHotelExport(e.target.value)}
+                className="elite-input rounded-xl px-3 py-1.5 text-xs bg-black border border-gold/20"
+              >
+                <option value="all">All Hotels</option>
+                {hotelStats.map(h => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
+              </select>
+              <Button variant="ghost" size="sm" icon={Download} onClick={() => {
+                const dataToExport = selectedHotelExport === 'all' ? hotelStats : hotelStats.filter(h => h.id === selectedHotelExport);
+                exportToCSV(dataToExport, 'hotel_report.csv');
+              }}>Export</Button>
+            </div>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -121,7 +138,10 @@ export default function AdminReports() {
       <GlassCard hover={false} className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-champagne font-semibold flex items-center gap-2"><MapPin size={18} className="text-gold" /> Hotel Activity</h3>
-          <Button variant="ghost" size="sm" icon={Download} onClick={() => exportToCSV(hotelStats, 'hotel_activity.csv')}>Export</Button>
+          <Button variant="ghost" size="sm" icon={Download} onClick={() => {
+            const dataToExport = selectedHotelExport === 'all' ? hotelStats : hotelStats.filter(h => h.id === selectedHotelExport);
+            exportToCSV(dataToExport, 'hotel_activity.csv');
+          }}>Export</Button>
         </div>
         {loading ? <p className="text-smoke text-center py-8">Loading...</p> : (
           <div className="overflow-x-auto">
@@ -146,16 +166,38 @@ export default function AdminReports() {
 
       {/* Member Activity Table */}
       <GlassCard hover={false}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-champagne font-semibold flex items-center gap-2"><Users size={18} className="text-gold" /> Member Activity (Top 20)</h3>
-          <Button variant="ghost" size="sm" icon={Download} onClick={() => exportToCSV(memberStats, 'member_activity.csv')}>Export</Button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-champagne font-semibold flex items-center gap-2"><Users size={18} className="text-gold" /> Member Activity</h3>
+            <button 
+              onClick={() => setShowAllMembers(!showAllMembers)}
+              className="text-xs px-2 py-1 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors"
+            >
+              {showAllMembers ? "Showing All" : "Showing Top 20"}
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <input 
+              type="text" 
+              placeholder="Search member..." 
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+              className="elite-input rounded-xl px-3 py-1.5 text-xs bg-black border border-gold/20 w-40 sm:w-48"
+            />
+            <Button variant="ghost" size="sm" icon={Download} onClick={() => {
+              const dataToExport = memberSearch ? allMemberStats.filter(m => m.name.toLowerCase().includes(memberSearch.toLowerCase()) || m.member_id?.toLowerCase().includes(memberSearch.toLowerCase()))
+                : (showAllMembers ? allMemberStats : allMemberStats.slice(0, 20));
+              exportToCSV(dataToExport, 'member_activity.csv');
+            }}>Export</Button>
+          </div>
         </div>
-        {loading ? <p className="text-smoke text-center py-8">Loading...</p> : memberStats.length === 0 ? <p className="text-smoke text-center py-8">No member data yet.</p> : (
-          <div className="overflow-x-auto">
+        {loading ? <p className="text-smoke text-center py-8">Loading...</p> : allMemberStats.length === 0 ? <p className="text-smoke text-center py-8">No member data yet.</p> : (
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto pr-2">
             <table className="elite-table">
-              <thead><tr><th>Member</th><th>ID</th><th>Plan</th><th>Visits</th><th>Spent</th><th>Saved</th></tr></thead>
+              <thead className="sticky top-0 bg-black-deep/95 backdrop-blur z-10"><tr><th>Member</th><th>ID</th><th>Plan</th><th>Visits</th><th>Spent</th><th>Saved</th></tr></thead>
               <tbody>
-                {memberStats.map((m, i) => (
+                {(memberSearch ? allMemberStats.filter(m => m.name.toLowerCase().includes(memberSearch.toLowerCase()) || m.member_id?.toLowerCase().includes(memberSearch.toLowerCase())) 
+                : (showAllMembers ? allMemberStats : allMemberStats.slice(0, 20))).map((m, i) => (
                   <tr key={i}>
                     <td className="text-champagne font-medium">{m.name}</td>
                     <td className="text-gold font-mono text-xs">{m.member_id || '—'}</td>
