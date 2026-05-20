@@ -4,7 +4,7 @@ import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Button from '../../components/common/Button';
 import { supabase } from '../../lib/supabase';
-import { formatCurrency } from '../../utils/helpers';
+import { formatCurrency, getTodayStart } from '../../utils/helpers';
 import { exportToCSV } from '../../utils/csvExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -36,13 +36,13 @@ export default function AdminReports() {
         let startDate = new Date();
         
         if (timeFilter === 'today') {
-          startDate.setHours(0, 0, 0, 0);
+          startDate = getTodayStart();
         } else if (timeFilter === 'month') {
           startDate.setDate(1);
-          startDate.setHours(0, 0, 0, 0);
+          startDate.setHours(4, 0, 0, 0);
         } else if (timeFilter === 'year') {
           startDate.setMonth(0, 1);
-          startDate.setHours(0, 0, 0, 0);
+          startDate.setHours(4, 0, 0, 0);
         }
 
         filteredVisits = filteredVisits.filter(v => new Date(v.check_in) >= startDate);

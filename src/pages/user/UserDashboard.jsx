@@ -8,7 +8,7 @@ import MembershipCard from '../../components/user/MembershipCard';
 import Badge from '../../components/common/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { formatCurrency, formatDate } from '../../utils/helpers';
+import { formatCurrency, formatDate, getTodayStart } from '../../utils/helpers';
 import { membershipPlans, partnerVenues, brandInfo } from '../../data/mockData';
 import logo from '../../assets/logo.png';
 
@@ -22,8 +22,7 @@ export default function UserDashboard() {
 
   const plan = membershipPlans.find(p => p.id === profile?.plan);
   
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
   const isDateExpired = profile?.expiry_date && new Date(profile.expiry_date) < todayStart;
   const isActive = profile?.status === 'active' && !isDateExpired;
 
@@ -57,20 +56,16 @@ export default function UserDashboard() {
 
       const isUnlimitedToday = profile.unlimited_day_used_at && new Date(profile.unlimited_day_used_at) >= todayStart;
 
-      // Dynamically filter venues based on consumed quota
-      if (isUnlimitedToday) {
-        setVenues(hotels);
-      } else {
-        const availableVenues = hotels.filter(v => {
-          // 1 nip = 2 beers. So 1 beer = 0.5 nips.
-          // Calculate total consumption in "equivalent nips"
-          const equivalentNipsConsumed = nipsToday + (beersToday / 2);
-          
-          // Venue is available if the consumed equivalent is less than the limit
-          return equivalentNipsConsumed < (v.nip_limit || 4);
-        });
-        setVenues(availableVenues);
-      }
+      // Always dynamically filter venues based on consumed quota, regardless of unlimited day
+      const availableVenues = hotels.filter(v => {
+        // 1 nip = 2 beers. So 1 beer = 0.5 nips.
+        // Calculate total consumption in "equivalent nips"
+        const equivalentNipsConsumed = nipsToday + (beersToday / 2);
+        
+        // Venue is available if the consumed equivalent is less than the limit
+        return equivalentNipsConsumed < (v.nip_limit || 4);
+      });
+      setVenues(availableVenues);
 
       setStats({
         visits: visits.length,
@@ -301,9 +296,9 @@ export default function UserDashboard() {
                         
                         if (profile.unlimited_day_used_at) {
                           const usedDate = new Date(profile.unlimited_day_used_at);
-                          const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+                          const todayStartLocal = getTodayStart();
                           
-                          if (usedDate >= todayStart) {
+                          if (usedDate >= todayStartLocal) {
                             statusText = "Active Today";
                           } else {
                             nextDate = new Date(usedDate);

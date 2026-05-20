@@ -8,7 +8,7 @@ import Button from '../../components/common/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/common/Toast';
 import { supabase } from '../../lib/supabase';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getTodayStart } from '../../utils/helpers';
 
 const resultStyles = {
   valid: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20' },
@@ -24,7 +24,7 @@ const resultStyles = {
 const getUnlimitedStatus = (unlimitedDayUsedAt) => {
   if (!unlimitedDayUsedAt) return { canActivate: true, nextDate: null };
   const usedDate = new Date(unlimitedDayUsedAt);
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
   // Already active today
   if (usedDate >= todayStart) return { canActivate: false, isActiveToday: true, nextDate: null };
   // Check 30-day cooldown
@@ -127,7 +127,7 @@ export default function HotelScanner() {
       const member = card.profiles;
 
       // 2. Check member status & Auto-Expire
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const todayStart = getTodayStart();
       const isDateExpired = member.expiry_date && new Date(member.expiry_date) < todayStart;
 
       if (member.status === 'active' && isDateExpired) {
@@ -277,7 +277,7 @@ export default function HotelScanner() {
       const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', memberId).single();
       if (freshProfile?.unlimited_day_used_at) {
         const usedDate = new Date(freshProfile.unlimited_day_used_at);
-        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+        const todayStart = getTodayStart();
         if (usedDate >= todayStart) {
           toast.error('Unlimited day is already active today!');
           setResult(prev => ({ ...prev, showUnlimitedBtn: false, unlimitedActiveToday: true }));

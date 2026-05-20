@@ -47,3 +47,13 @@ export function generateMemberId() {
   const rand = Math.floor(Math.random() * 9000) + 1000;
   return `EC-${year}-${rand}`;
 }
+
+export function getTodayStart() {
+  const now = new Date();
+  if (now.getHours() < 4) {
+    // If it's before 4 AM, "today" started yesterday at 4 AM
+    now.setDate(now.getDate() - 1);
+  }
+  now.setHours(4, 0, 0, 0);
+  return now;
+}
