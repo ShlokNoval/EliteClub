@@ -115,7 +115,7 @@ export default function AdminReports() {
                 ))}
               </select>
               <Button variant="ghost" size="sm" icon={Download} onClick={() => {
-                const dataToExport = selectedHotelExport === 'all' ? hotelStats : hotelStats.filter(h => h.id === selectedHotelExport);
+                const dataToExport = selectedHotelExport === 'all' ? hotelStats : hotelStats.filter(h => String(h.id) === String(selectedHotelExport));
                 exportToCSV(dataToExport, 'hotel_report.csv');
               }}>Export</Button>
             </div>
@@ -139,7 +139,7 @@ export default function AdminReports() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-champagne font-semibold flex items-center gap-2"><MapPin size={18} className="text-gold" /> Hotel Activity</h3>
           <Button variant="ghost" size="sm" icon={Download} onClick={() => {
-            const dataToExport = selectedHotelExport === 'all' ? hotelStats : hotelStats.filter(h => h.id === selectedHotelExport);
+            const dataToExport = selectedHotelExport === 'all' ? hotelStats : hotelStats.filter(h => String(h.id) === String(selectedHotelExport));
             exportToCSV(dataToExport, 'hotel_activity.csv');
           }}>Export</Button>
         </div>
