@@ -166,7 +166,9 @@ export default function HotelScanner() {
         // Check nips and beers independently against their respective limits
         if (totalNips >= nipLimit || totalBeers >= beerLimit) {
           await logScan(cardId, member.id, 'check_in', 'blocked');
-          const unlimitedStatus = getUnlimitedStatus(member.unlimited_day_used_at);
+          // Fetch fresh unlimited status directly from DB
+          const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', member.id).single();
+          const unlimitedStatus = getUnlimitedStatus(freshProfile?.unlimited_day_used_at);
           setResult({ 
             type: 'blocked', 
             title: 'Quota Exhausted', 
@@ -230,7 +232,9 @@ export default function HotelScanner() {
       await logScan(cardId, member.id, 'check_in', 'valid');
       await supabase.from('hotels').update({ scan_count: (hotel.scan_count || 0) + 1 }).eq('id', hotel.id);
 
-      const unlimitedStatus = getUnlimitedStatus(member.unlimited_day_used_at);
+      // Fetch fresh unlimited status directly from DB to avoid stale data
+      const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', member.id).single();
+      const unlimitedStatus = getUnlimitedStatus(freshProfile?.unlimited_day_used_at);
 
       setResult({
         type: 'check_in',
