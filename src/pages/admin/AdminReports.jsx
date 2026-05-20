@@ -58,7 +58,7 @@ export default function AdminReports() {
         const hBills = filteredBills.filter(b => b.hotel_id === h.id);
         const revenue = hBills.reduce((s, b) => s + Number(b.food_bev_cost || 0) + Number(b.liquor_cost_billed || 0), 0);
         const savings = hBills.reduce((s, b) => s + Number(b.savings || 0), 0);
-        return { name: h.name, visits: hVisits.length, bills: hBills.length, revenue, savings, scans: h.scan_count };
+        return { id: h.id, name: h.name, visits: hVisits.length, bills: hBills.length, revenue, savings, scans: h.scan_count };
       });
 
       // Member-wise stats
