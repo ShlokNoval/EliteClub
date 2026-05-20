@@ -8,7 +8,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/common/Toast';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getTodayStart } from '../../utils/helpers';
 
 export default function AdminHotels() {
   const [hotels, setHotels] = useState([]);
@@ -52,11 +52,11 @@ export default function AdminHotels() {
     try {
       let startDate = new Date();
       if (filter === 'today') {
-        startDate.setHours(0, 0, 0, 0);
+        startDate = getTodayStart();
       } else if (filter === 'month') {
-        startDate.setDate(1); startDate.setHours(0, 0, 0, 0);
+        startDate.setDate(1); startDate.setHours(4, 0, 0, 0);
       } else if (filter === 'year') {
-        startDate.setMonth(0, 1); startDate.setHours(0, 0, 0, 0);
+        startDate.setMonth(0, 1); startDate.setHours(4, 0, 0, 0);
       } else {
         startDate = new Date(0); // All time
       }
@@ -92,8 +92,7 @@ export default function AdminHotels() {
 
 
   const fetchHotels = async () => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStart = getTodayStart();
 
     const [{ data: hData }, { data: vData }, { data: sData }] = await Promise.all([
       supabase.from('hotels').select('*').order('created_at', { ascending: false }),

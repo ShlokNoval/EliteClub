@@ -6,7 +6,7 @@ import Button from '../../components/common/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/common/Toast';
 import { supabase } from '../../lib/supabase';
-import { formatCurrency } from '../../utils/helpers';
+import { formatCurrency, getTodayStart } from '../../utils/helpers';
 
 export default function HotelBillUpload() {
   const { hotel } = useAuth();
@@ -24,8 +24,7 @@ export default function HotelBillUpload() {
 
   const fetchData = async () => {
     try {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      const todayStart = getTodayStart();
 
       // Get open visits
       const { data: visits } = await supabase.from('visits')

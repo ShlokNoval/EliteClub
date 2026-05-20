@@ -10,7 +10,7 @@ import { useToast } from '../../components/common/Toast';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import logo from '../../assets/logo.png';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getTodayStart } from '../../utils/helpers';
 
 export default function ScanPage() {
   const { cardId } = useParams();
@@ -39,7 +39,7 @@ export default function ScanPage() {
         let profileData = data.profiles;
         
         if (profileData && profileData.status === 'active' && profileData.expiry_date) {
-            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+            const todayStart = getTodayStart();
             if (new Date(profileData.expiry_date) < todayStart) {
                 await supabase.from('profiles').update({ status: 'expired' }).eq('id', profileData.id);
                 profileData.status = 'expired';
@@ -57,7 +57,7 @@ export default function ScanPage() {
   };
 
   const checkVisitStatus = async (memberId) => {
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayStart = getTodayStart();
 
     // Check closed visits today
     const { data: closedToday } = await supabase.from('visits')

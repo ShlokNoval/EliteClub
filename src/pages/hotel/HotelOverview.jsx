@@ -6,6 +6,7 @@ import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { getTodayStart } from '../../utils/helpers';
 
 export default function HotelOverview() {
   const { hotel } = useAuth();
@@ -20,7 +21,7 @@ export default function HotelOverview() {
 
   const fetchData = async () => {
     try {
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const todayStart = getTodayStart();
 
       const [todayScansRes, totalCountRes, visitsRes] = await Promise.all([
         // Today's scans only
