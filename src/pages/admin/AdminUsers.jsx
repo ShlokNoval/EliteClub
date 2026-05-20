@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Filter, Edit3, UserPlus, Eye, EyeOff, CreditCard, Lock } from 'lucide-react';
+import { Search, Filter, Edit3, UserPlus, Eye, EyeOff, CreditCard, Lock, Camera } from 'lucide-react';
 import PageTransition from '../../components/layout/PageTransition';
 import GlassCard from '../../components/common/GlassCard';
 import Badge from '../../components/common/Badge';
@@ -27,8 +27,13 @@ export default function AdminUsers() {
 
   // Add user form
   const [newUser, setNewUser] = useState({ full_name: '', email: '', phone: '', plan: 'solo', card_id: '', password: '' });
+  const [newAvatar, setNewAvatar] = useState(null);
+  const [newAvatarPreview, setNewAvatarPreview] = useState(null);
+
   // Edit user form
   const [editForm, setEditForm] = useState({});
+  const [editAvatar, setEditAvatar] = useState(null);
+  const [editAvatarPreview, setEditAvatarPreview] = useState(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -78,6 +83,18 @@ export default function AdminUsers() {
       const expiryDate = new Date(joinDate);
       expiryDate.setDate(joinDate.getDate() + 30);
 
+      // Upload Photo
+      let photo_url = null;
+      if (newAvatar) {
+        const ext = newAvatar.name.split('.').pop();
+        const path = `${authUserId}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from('member_photos').upload(path, newAvatar);
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('member_photos').getPublicUrl(path);
+          photo_url = urlData?.publicUrl;
+        }
+      }
+
       // Create profile
       const { error: profileError } = await supabase.from('profiles').insert({
         id: authUserId,
@@ -91,6 +108,7 @@ export default function AdminUsers() {
         member_id: newUser.card_id,
         join_date: joinDate.toISOString(),
         expiry_date: expiryDate.toISOString(),
+        photo_url,
       });
       if (profileError) throw profileError;
 
@@ -102,6 +120,8 @@ export default function AdminUsers() {
       toast.success(`User ${newUser.full_name} created! Member ID: ${newUser.card_id}`);
       setAddModal(false);
       setNewUser({ full_name: '', email: '', phone: '', plan: 'solo', card_id: '', password: '' });
+      setNewAvatar(null);
+      setNewAvatarPreview(null);
       fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to create user.');
@@ -113,6 +133,17 @@ export default function AdminUsers() {
   const handleEditUser = async () => {
     setSaving(true);
     try {
+      let photo_url = editForm.photo_url;
+      if (editAvatar) {
+        const ext = editAvatar.name.split('.').pop();
+        const path = `${editForm.id}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from('member_photos').upload(path, editAvatar);
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('member_photos').getPublicUrl(path);
+          photo_url = urlData?.publicUrl;
+        }
+      }
+
       const { error } = await supabase.from('profiles')
         .update({
           full_name: editForm.full_name,
@@ -120,6 +151,7 @@ export default function AdminUsers() {
           status: editForm.status,
           plan: editForm.plan,
           expiry_date: editForm.expiry_date || null,
+          photo_url,
         })
         .eq('id', editForm.id);
       if (error) throw error;
@@ -265,7 +297,12 @@ export default function AdminUsers() {
                   <td className="text-smoke text-xs">{formatDate(user.join_date)}</td>
                   <td>
                     <button
-                      onClick={() => { setEditForm({ ...user }); setEditModal(true); }}
+                      onClick={() => { 
+                        setEditForm({ ...user }); 
+                        setEditAvatar(null);
+                        setEditAvatarPreview(null);
+                        setEditModal(true); 
+                      }}
                       className="p-2 rounded-lg hover:bg-gold/10 text-smoke hover:text-gold transition-all cursor-pointer"
                     >
                       <Edit3 size={14} />
@@ -282,8 +319,31 @@ export default function AdminUsers() {
       </GlassCard>
 
       {/* Add User Modal */}
-      <Modal isOpen={addModal} onClose={() => setAddModal(false)} title="Add New Member" size="lg">
+      <Modal isOpen={addModal} onClose={() => { setAddModal(false); setNewAvatar(null); setNewAvatarPreview(null); }} title="Add New Member" size="lg">
         <div className="space-y-4">
+          <div className="flex flex-col items-center gap-2 mb-4">
+            <div className="relative w-20 h-20 rounded-full bg-black border border-white/10 overflow-hidden flex items-center justify-center">
+              {newAvatarPreview ? (
+                <img src={newAvatarPreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <Camera size={24} className="text-gold/50" />
+              )}
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setNewAvatar(file);
+                    setNewAvatarPreview(URL.createObjectURL(file));
+                  }
+                }}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </div>
+            <p className="text-xs text-smoke">Upload Photo (Optional)</p>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Full Name *</label>
@@ -335,8 +395,31 @@ export default function AdminUsers() {
       </Modal>
 
       {/* Edit User Modal */}
-      <Modal isOpen={editModal} onClose={() => setEditModal(false)} title="Edit Member" size="md">
+      <Modal isOpen={editModal} onClose={() => { setEditModal(false); setEditAvatar(null); setEditAvatarPreview(null); }} title="Edit Member" size="md">
         <div className="space-y-4">
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <div className="relative w-20 h-20 rounded-full bg-black border border-white/10 overflow-hidden flex items-center justify-center">
+              {editAvatarPreview || editForm.photo_url ? (
+                <img src={editAvatarPreview || editForm.photo_url} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <Camera size={24} className="text-gold/50" />
+              )}
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setEditAvatar(file);
+                    setEditAvatarPreview(URL.createObjectURL(file));
+                  }
+                }}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </div>
+            <p className="text-xs text-smoke">Update Photo</p>
+          </div>
+
           <div className="space-y-2">
             <label className="block text-sm font-medium text-champagne-dark">Full Name</label>
             <input value={editForm.full_name || ''} onChange={e => setEditForm(p => ({ ...p, full_name: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" />

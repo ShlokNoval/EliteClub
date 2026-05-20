@@ -92,7 +92,7 @@ export default function HotelScanner() {
 
     try {
       // 1. Look up card
-      const { data: card } = await supabase.from('qr_cards').select('*, profiles:assigned_to(id, full_name, email, phone, plan, status, member_id, join_date, expiry_date, unlimited_day_used_at)').eq('card_id', cardId).single();
+      const { data: card } = await supabase.from('qr_cards').select('*, profiles:assigned_to(id, full_name, email, phone, plan, status, member_id, join_date, expiry_date, unlimited_day_used_at, photo_url)').eq('card_id', cardId).single();
 
       if (!card) {
         await logScan(cardId, null, 'check_in', 'not_found');
@@ -363,11 +363,17 @@ export default function HotelScanner() {
                   {result.member && (
                     <div className="border-t border-white/5 pt-4 space-y-3 text-sm">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center">
-                          <User size={20} className="text-gold" />
-                        </div>
+                        {result.member.photo_url ? (
+                          <div className="w-14 h-14 rounded-2xl bg-black border border-gold/20 flex-shrink-0 overflow-hidden">
+                            <img src={result.member.photo_url} alt="Member Photo" className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-14 h-14 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                            <User size={24} className="text-gold" />
+                          </div>
+                        )}
                         <div>
-                          <p className="text-champagne font-semibold">{result.member.full_name}</p>
+                          <p className="text-champagne font-semibold text-base">{result.member.full_name}</p>
                           <p className="text-ash text-xs">{result.member.member_id}</p>
                         </div>
                         <Badge status={result.member.status} className="ml-auto" />
