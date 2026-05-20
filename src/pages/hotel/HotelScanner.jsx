@@ -33,6 +33,7 @@ export default function HotelScanner() {
   const [otpStep, setOtpStep] = useState(null);
   const [otpCode, setOtpCode] = useState('');
   const [activatingUnlimited, setActivatingUnlimited] = useState(false);
+  const [enlargedPhoto, setEnlargedPhoto] = useState(null);
 
   // Clean up camera on unmount
   useEffect(() => {
@@ -147,14 +148,10 @@ export default function HotelScanner() {
         const nipLimit = hotel.nip_limit || 4;
         const beerLimit = hotel.beer_limit || (nipLimit * 2);
         
-        // 1 nip = 2 beers. So 1 beer = 0.5 nips.
-        const equivalentNipsConsumed = totalNips + (totalBeers / 2);
-        const equivalentBeersConsumed = (totalNips * 2) + totalBeers;
-        
-        // If the consumed equivalent quota is equal or exceeds the venue limit, block check-in
-        if (equivalentNipsConsumed >= nipLimit) {
+        // Check nips and beers independently against their respective limits
+        if (totalNips >= nipLimit || totalBeers >= beerLimit) {
           await logScan(cardId, member.id, 'check_in', 'blocked');
-          setResult({ type: 'blocked', title: 'Quota Exhausted', desc: `${member.full_name} has consumed their daily allowance — equivalent to ${equivalentNipsConsumed} / ${nipLimit} Nips (or ${equivalentBeersConsumed} / ${beerLimit} Beers).`, member });
+          setResult({ type: 'blocked', title: 'Quota Exhausted', desc: `${member.full_name} has consumed their daily allowance — ${totalNips} / ${nipLimit} Nips and ${totalBeers} / ${beerLimit} Beers.`, member });
           setScanning(false);
           return;
         }
@@ -261,9 +258,28 @@ export default function HotelScanner() {
     if (!window.confirm("Activate 1-Day Unlimited for this user? This cannot be undone.")) return;
     setActivatingUnlimited(true);
     try {
+      // Double-check cooldown from the database before activating
+      const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', memberId).single();
+      if (freshProfile?.unlimited_day_used_at) {
+        const usedDate = new Date(freshProfile.unlimited_day_used_at);
+        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+        if (usedDate >= todayStart) {
+          toast.error('Unlimited day is already active today!');
+          setResult(prev => ({ ...prev, showUnlimitedBtn: false, unlimitedActiveToday: true }));
+          return;
+        }
+        const nextDate = new Date(usedDate);
+        nextDate.setDate(nextDate.getDate() + 30);
+        if (new Date() < nextDate) {
+          toast.error(`Cooldown active! Next available: ${nextDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`);
+          setResult(prev => ({ ...prev, showUnlimitedBtn: false, unlimitedNextDate: nextDate }));
+          return;
+        }
+      }
+
       await supabase.from('profiles').update({ unlimited_day_used_at: new Date().toISOString() }).eq('id', memberId);
       toast.success('Unlimited Day Activated!');
-      setResult(prev => ({ ...prev, showUnlimitedBtn: false, desc: prev.desc + ' (Unlimited Day Active)' }));
+      setResult(prev => ({ ...prev, showUnlimitedBtn: false, unlimitedActiveToday: true, desc: prev.desc + ' (Unlimited Day Active)' }));
     } catch (err) {
       toast.error('Failed to activate unlimited day.');
     } finally {
@@ -364,7 +380,10 @@ export default function HotelScanner() {
                     <div className="border-t border-white/5 pt-4 space-y-3 text-sm">
                       <div className="flex items-center gap-3 mb-4">
                         {result.member.photo_url ? (
-                          <div className="w-14 h-14 rounded-2xl bg-black border border-gold/20 flex-shrink-0 overflow-hidden">
+                          <div 
+                            className="w-14 h-14 rounded-2xl bg-black border border-gold/20 flex-shrink-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-gold/40 transition-all"
+                            onClick={() => setEnlargedPhoto(result.member.photo_url)}
+                          >
                             <img src={result.member.photo_url} alt="Member Photo" className="w-full h-full object-cover" />
                           </div>
                         ) : (
@@ -456,6 +475,41 @@ export default function HotelScanner() {
           )}
         </div>
       </div>
+
+      {/* Photo Lightbox */}
+      <AnimatePresence>
+        {enlargedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6"
+            onClick={() => setEnlargedPhoto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={enlargedPhoto} 
+                alt="Member Photo" 
+                className="w-full max-h-[70vh] object-contain rounded-2xl border border-gold/30 shadow-2xl"
+              />
+              <button 
+                onClick={() => setEnlargedPhoto(null)}
+                className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-black border border-gold/30 text-gold flex items-center justify-center text-lg hover:bg-gold/20 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+              <p className="text-center text-smoke text-xs mt-3">Tap outside to close</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 }
