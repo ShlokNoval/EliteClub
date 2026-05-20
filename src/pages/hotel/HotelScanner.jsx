@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/common/Toast';
 import { supabase } from '../../lib/supabase';
 import { formatDate, getTodayStart } from '../../utils/helpers';
+import { generateOTP, sendFast2SmsOTP } from '../../utils/otp';
 
 const resultStyles = {
   valid: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20' },
@@ -205,11 +206,26 @@ export default function HotelScanner() {
 
       // 5. Check-in Flow (OTP if shareable)
       if (member.plan === 'shareable') {
-        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        const code = generateOTP();
         const expires = new Date(Date.now() + 10 * 60000).toISOString();
         await supabase.from('profiles').update({ otp_code: code, otp_expires_at: expires }).eq('id', member.id);
-        console.log(`[MVP] OTP for ${member.phone || member.email} is ${code}`);
-        setOtpStep({ member, cardId });
+        console.log(`[EliteClub OTP System] Generated OTP: ${code} for Member: ${member.full_name} (${member.phone || member.email})`);
+        
+        let smsSent = false;
+        try {
+          if (member.phone) {
+            await sendFast2SmsOTP(member.phone, code);
+            smsSent = true;
+            toast.success(`OTP sent successfully via SMS to ${member.phone}!`);
+          } else {
+            toast.error('No phone number registered for this member to send SMS OTP.');
+          }
+        } catch (smsError) {
+          console.warn('[OTP SMS Service Error]', smsError.message);
+          toast.error(`SMS Delivery Failed: ${smsError.message}. Using Dev Mode fallback.`);
+        }
+
+        setOtpStep({ member, cardId, smsSent });
         setScanning(false);
         return;
       } else {
@@ -466,8 +482,14 @@ export default function HotelScanner() {
                   </div>
                   <div className="space-y-4">
                     <div className="text-center text-xs text-champagne-dark p-3 bg-white/5 rounded-lg border border-white/10">
-                      OTP sent to: {otpStep.member.phone || otpStep.member.email || 'Registered Contact'}
-                      <div className="mt-1 text-[10px] text-gold">(MVP Check: View console or admin panel for OTP code)</div>
+                      {otpStep.smsSent ? (
+                        <p className="text-green-400 font-medium">✓ OTP sent via SMS to: {otpStep.member.phone}</p>
+                      ) : (
+                        <>
+                          <p>OTP sent to: {otpStep.member.phone || otpStep.member.email || 'Registered Contact'}</p>
+                          <p className="mt-1 text-[10px] text-gold">(Dev Mode Check: View console or admin panel for OTP code)</p>
+                        </>
+                      )}
                     </div>
                     <input
                       type="text"
