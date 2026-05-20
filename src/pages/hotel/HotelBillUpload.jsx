@@ -30,7 +30,7 @@ export default function HotelBillUpload() {
 
       // Get open visits
       const { data: visits } = await supabase.from('visits')
-        .select('id, member_id, check_in, check_out, profiles:member_id(full_name, member_id, unlimited_day_used_at)')
+        .select('id, member_id, check_in, check_out, profiles:member_id(full_name, member_id, card_id, unlimited_day_used_at)')
         .eq('hotel_id', hotel.id)
         .eq('status', 'open')
         .order('check_in', { ascending: false });
@@ -99,7 +99,7 @@ export default function HotelBillUpload() {
       // Close the visit and log check-out scan
       await supabase.from('visits').update({ check_out: new Date().toISOString(), status: 'closed' }).eq('id', Number(selectedVisit));
       await supabase.from('scans').insert({
-        card_id: 'BILL_CHECKOUT',
+        card_id: visit.profiles?.card_id || visit.profiles?.member_id || 'UNKNOWN',
         hotel_id: hotel.id,
         member_id: visit.member_id,
         scan_type: 'check_out',
