@@ -19,8 +19,8 @@ export const brandInfo = {
 
 export const membershipPlans = [
   {
-    id: 'solo',
-    name: 'Solo Member',
+    id: 'prime',
+    name: 'Prime Member',
     subtitle: 'The Personal Privilege',
     duration: '30 Days',
     mrpDays: 29,
@@ -104,7 +104,7 @@ export const howItWorks = [
   {
     step: 1,
     title: 'Choose Your Plan',
-    description: 'Select Dainik or Decka membership based on your lifestyle.',
+    description: 'Select Prime or Shareable membership based on your lifestyle.',
     icon: 'Sparkles',
   },
   {
@@ -175,7 +175,7 @@ export const mockUsers = [
     name: 'Rajesh Kumar',
     email: 'rajesh.kumar@email.com',
     phone: '+91 98765 11111',
-    plan: 'decka',
+    plan: 'shareable',
     status: 'active',
     joinDate: '2026-04-01',
     expiryDate: '2026-04-10',
@@ -188,7 +188,7 @@ export const mockUsers = [
     name: 'Amit Sharma',
     email: 'amit.sharma@email.com',
     phone: '+91 98765 22222',
-    plan: 'dainik',
+    plan: 'prime',
     status: 'active',
     joinDate: '2026-04-05',
     expiryDate: '2026-05-04',
@@ -201,7 +201,7 @@ export const mockUsers = [
     name: 'Priya Deshmukh',
     email: 'priya.d@email.com',
     phone: '+91 98765 33333',
-    plan: 'decka',
+    plan: 'shareable',
     status: 'inactive',
     joinDate: '2026-03-15',
     expiryDate: '2026-03-25',
@@ -214,7 +214,7 @@ export const mockUsers = [
     name: 'Vikram Patil',
     email: 'vikram.p@email.com',
     phone: '+91 98765 44444',
-    plan: 'dainik',
+    plan: 'prime',
     status: 'active',
     joinDate: '2026-04-10',
     expiryDate: '2026-05-09',
@@ -227,7 +227,7 @@ export const mockUsers = [
     name: 'Sneha Joshi',
     email: 'sneha.j@email.com',
     phone: '+91 98765 55555',
-    plan: 'decka',
+    plan: 'shareable',
     status: 'pending',
     joinDate: '2026-04-28',
     expiryDate: null,
@@ -240,7 +240,7 @@ export const mockUsers = [
     name: 'Rohan Kulkarni',
     email: 'rohan.k@email.com',
     phone: '+91 98765 66666',
-    plan: 'dainik',
+    plan: 'prime',
     status: 'active',
     joinDate: '2026-04-15',
     expiryDate: '2026-05-14',
@@ -253,7 +253,7 @@ export const mockUsers = [
     name: 'Anita More',
     email: 'anita.m@email.com',
     phone: '+91 98765 77777',
-    plan: 'decka',
+    plan: 'shareable',
     status: 'expired',
     joinDate: '2026-03-01',
     expiryDate: '2026-03-10',
@@ -266,7 +266,7 @@ export const mockUsers = [
     name: 'Deepak Gaikwad',
     email: 'deepak.g@email.com',
     phone: '+91 98765 88888',
-    plan: 'dainik',
+    plan: 'prime',
     status: 'active',
     joinDate: '2026-04-20',
     expiryDate: '2026-05-19',
@@ -294,16 +294,16 @@ export const mockHotels = [
 
 // ═══ Mock Scans ═══
 export const mockScans = [
-  { id: 'SCN001', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'USR001', userName: 'Rajesh Kumar', timestamp: '2026-04-30T18:30:00', result: 'valid', plan: 'Decka Member' },
-  { id: 'SCN002', hotelId: 'HTL002', hotelName: 'Spree', userId: 'USR002', userName: 'Amit Sharma', timestamp: '2026-04-30T19:15:00', result: 'valid', plan: 'Dainik Member' },
-  { id: 'SCN003', hotelId: 'HTL003', hotelName: 'Patiala Peg', userId: 'USR003', userName: 'Priya Deshmukh', timestamp: '2026-04-30T20:00:00', result: 'expired', plan: 'Decka Member' },
-  { id: 'SCN004', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'USR004', userName: 'Vikram Patil', timestamp: '2026-04-30T20:45:00', result: 'valid', plan: 'Dainik Member' },
-  { id: 'SCN005', hotelId: 'HTL005', hotelName: 'Abhinandan', userId: 'USR001', userName: 'Rajesh Kumar', timestamp: '2026-04-29T21:00:00', result: 'valid', plan: 'Decka Member' },
-  { id: 'SCN006', hotelId: 'HTL004', hotelName: 'The Hangover', userId: 'USR007', userName: 'Anita More', timestamp: '2026-04-29T19:30:00', result: 'expired', plan: 'Decka Member' },
-  { id: 'SCN007', hotelId: 'HTL002', hotelName: 'Spree', userId: 'USR006', userName: 'Rohan Kulkarni', timestamp: '2026-04-29T18:00:00', result: 'valid', plan: 'Dainik Member' },
-  { id: 'SCN008', hotelId: 'HTL008', hotelName: 'The Maple', userId: 'USR008', userName: 'Deepak Gaikwad', timestamp: '2026-04-28T20:30:00', result: 'valid', plan: 'Dainik Member' },
+  { id: 'SCN001', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'USR001', userName: 'Rajesh Kumar', timestamp: '2026-04-30T18:30:00', result: 'valid', plan: 'Shareable Member' },
+  { id: 'SCN002', hotelId: 'HTL002', hotelName: 'Spree', userId: 'USR002', userName: 'Amit Sharma', timestamp: '2026-04-30T19:15:00', result: 'valid', plan: 'Prime Member' },
+  { id: 'SCN003', hotelId: 'HTL003', hotelName: 'Patiala Peg', userId: 'USR003', userName: 'Priya Deshmukh', timestamp: '2026-04-30T20:00:00', result: 'expired', plan: 'Shareable Member' },
+  { id: 'SCN004', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'USR004', userName: 'Vikram Patil', timestamp: '2026-04-30T20:45:00', result: 'valid', plan: 'Prime Member' },
+  { id: 'SCN005', hotelId: 'HTL005', hotelName: 'Abhinandan', userId: 'USR001', userName: 'Rajesh Kumar', timestamp: '2026-04-29T21:00:00', result: 'valid', plan: 'Shareable Member' },
+  { id: 'SCN006', hotelId: 'HTL004', hotelName: 'The Hangover', userId: 'USR007', userName: 'Anita More', timestamp: '2026-04-29T19:30:00', result: 'expired', plan: 'Shareable Member' },
+  { id: 'SCN007', hotelId: 'HTL002', hotelName: 'Spree', userId: 'USR006', userName: 'Rohan Kulkarni', timestamp: '2026-04-29T18:00:00', result: 'valid', plan: 'Prime Member' },
+  { id: 'SCN008', hotelId: 'HTL008', hotelName: 'The Maple', userId: 'USR008', userName: 'Deepak Gaikwad', timestamp: '2026-04-28T20:30:00', result: 'valid', plan: 'Prime Member' },
   { id: 'SCN009', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'UNKNOWN', userName: 'Unknown', timestamp: '2026-04-28T22:00:00', result: 'invalid', plan: 'N/A' },
-  { id: 'SCN010', hotelId: 'HTL007', hotelName: 'Hotel Balbeer', userId: 'USR004', userName: 'Vikram Patil', timestamp: '2026-04-28T19:15:00', result: 'valid', plan: 'Dainik Member' },
+  { id: 'SCN010', hotelId: 'HTL007', hotelName: 'Hotel Balbeer', userId: 'USR004', userName: 'Vikram Patil', timestamp: '2026-04-28T19:15:00', result: 'valid', plan: 'Prime Member' },
 ];
 
 // ═══ Admin Stats ═══
@@ -335,8 +335,8 @@ export const currentUser = {
   name: 'Rajesh Kumar',
   email: 'rajesh.kumar@email.com',
   phone: '+91 98765 11111',
-  plan: 'decka',
-  planName: 'Decka Member',
+  plan: 'shareable',
+  planName: 'Shareable Member',
   status: 'active',
   joinDate: '2026-04-01',
   expiryDate: '2026-04-10',
@@ -361,14 +361,14 @@ export const currentHotel = {
 
 // ═══ Recent Activity (Admin) ═══
 export const recentActivity = [
-  { id: 1, type: 'user_joined', message: 'Sneha Joshi registered for Decka membership', time: '2 hours ago', icon: 'UserPlus' },
+  { id: 1, type: 'user_joined', message: 'Sneha Joshi registered for Shareable membership', time: '2 hours ago', icon: 'UserPlus' },
   { id: 2, type: 'scan', message: 'QR scanned at Elevate Bar — Valid membership', time: '3 hours ago', icon: 'ScanLine' },
   { id: 3, type: 'hotel_request', message: 'Tokeo Vintage Sky Lounge applied for partnership', time: '5 hours ago', icon: 'Building2' },
   { id: 4, type: 'payment', message: 'Payment received from Vikram Patil — ₹1,700', time: '6 hours ago', icon: 'IndianRupee' },
-  { id: 5, type: 'expired', message: 'Anita More\'s Decka membership expired', time: '1 day ago', icon: 'AlertTriangle' },
+  { id: 5, type: 'expired', message: 'Anita More\'s Shareable membership expired', time: '1 day ago', icon: 'AlertTriangle' },
   { id: 6, type: 'hotel_verified', message: 'Silver Oak partnership request rejected', time: '2 days ago', icon: 'XCircle' },
   { id: 7, type: 'scan', message: 'Invalid QR scan attempt at Elevate Bar', time: '2 days ago', icon: 'ShieldAlert' },
-  { id: 8, type: 'user_joined', message: 'Deepak Gaikwad registered for Dainik membership', time: '3 days ago', icon: 'UserPlus' },
+  { id: 8, type: 'user_joined', message: 'Deepak Gaikwad registered for Prime membership', time: '3 days ago', icon: 'UserPlus' },
 ];
 
 // ═══ Revenue Chart Data ═══

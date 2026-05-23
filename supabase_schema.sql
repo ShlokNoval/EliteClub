@@ -11,7 +11,7 @@ CREATE TABLE profiles (
   phone text DEFAULT '',
   role text NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('active', 'inactive', 'pending', 'expired')),
-  plan text CHECK (plan IN ('dainik', 'decka', 'solo', 'shareable') OR plan IS NULL),
+  plan text CHECK (plan IN ('prime', 'shareable') OR plan IS NULL),
   card_id text UNIQUE,
   member_id text UNIQUE,
   join_date timestamptz,
