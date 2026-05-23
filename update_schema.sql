@@ -5,7 +5,7 @@
 
 -- 1. Modify PROFILES table
 ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_plan_check;
-ALTER TABLE profiles ADD CONSTRAINT profiles_plan_check CHECK (plan IN ('dainik', 'decka', 'solo', 'shareable') OR plan IS NULL);
+ALTER TABLE profiles ADD CONSTRAINT profiles_plan_check CHECK (plan IN ('prime', 'shareable') OR plan IS NULL);
 
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS unlimited_day_used_at timestamptz;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS otp_code text;

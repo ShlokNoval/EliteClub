@@ -26,7 +26,7 @@ export default function AdminUsers() {
   const toast = useToast();
 
   // Add user form
-  const [newUser, setNewUser] = useState({ full_name: '', email: '', phone: '', plan: 'solo', card_id: '', password: '' });
+  const [newUser, setNewUser] = useState({ full_name: '', email: '', phone: '', plan: 'prime', card_id: '', password: '' });
   const [newAvatar, setNewAvatar] = useState(null);
   const [newAvatarPreview, setNewAvatarPreview] = useState(null);
 
@@ -119,7 +119,7 @@ export default function AdminUsers() {
 
       toast.success(`User ${newUser.full_name} created! Member ID: ${newUser.card_id}`);
       setAddModal(false);
-      setNewUser({ full_name: '', email: '', phone: '', plan: 'solo', card_id: '', password: '' });
+      setNewUser({ full_name: '', email: '', phone: '', plan: 'prime', card_id: '', password: '' });
       setNewAvatar(null);
       setNewAvatarPreview(null);
       fetchData();
@@ -363,10 +363,8 @@ export default function AdminUsers() {
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Plan *</label>
               <select value={newUser.plan} onChange={e => setNewUser(p => ({ ...p, plan: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
-                <option value="solo">Solo (₹4,000) - Single Person</option>
+                <option value="prime">Prime (₹4,000) - Single Person</option>
                 <option value="shareable">Shareable (₹6,000) - OTP Verified</option>
-                <option value="dainik">Dainik Member (Legacy)</option>
-                <option value="decka">Decka Member (Legacy)</option>
               </select>
             </div>
           </div>
@@ -441,10 +439,8 @@ export default function AdminUsers() {
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Plan</label>
               <select value={editForm.plan || ''} onChange={e => setEditForm(p => ({ ...p, plan: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
-                <option value="solo">Solo (₹4,000)</option>
+                <option value="prime">Prime (₹4,000)</option>
                 <option value="shareable">Shareable (₹6,000)</option>
-                <option value="dainik">Dainik (Legacy)</option>
-                <option value="decka">Decka (Legacy)</option>
               </select>
             </div>
             <div className="space-y-2 col-span-2">
