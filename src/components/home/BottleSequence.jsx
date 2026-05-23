@@ -43,7 +43,7 @@ export default function BottleSequence({ membershipRef }) {
         <Suspense fallback={null}>
           <AnimatedBottle membershipRef={membershipRef} isMobile={isMobile} />
           {/* Procedural Environment map for realistic reflections without CDN loading lag */}
-          <Environment resolution={isMobile ? 128 : 256}>
+          <Environment resolution={isMobile ? 64 : 128}>
             <group rotation={[-Math.PI / 2, 0, 0]}>
               <Lightformer intensity={4} rotation-x={Math.PI / 2} position={[0, 5, -9]} scale={[10, 10, 1]} />
               <Lightformer intensity={2} rotation-y={Math.PI / 2} position={[-5, 1, -1]} scale={[20, 0.1, 1]} />

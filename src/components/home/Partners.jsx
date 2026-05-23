@@ -48,7 +48,9 @@ export default function Partners() {
                 {venue.image ? (
                   <img 
                     src={venue.image} 
-                    alt={venue.name} 
+                    alt={venue.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-500 ease-out" 
                   />
                 ) : (
