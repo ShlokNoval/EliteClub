@@ -25,7 +25,7 @@ export default function BackgroundBubbles() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
 
-  const bubbleCount = isMobile ? 12 : 40;
+  const bubbleCount = isMobile ? 8 : 20;
 
   const bubbles = useMemo(() => {
     return Array.from({ length: bubbleCount }).map((_, i) => {

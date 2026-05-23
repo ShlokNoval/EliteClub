@@ -54,7 +54,7 @@ function CO2Burst() {
     <group ref={groupRef}>
       {particles.current.map((_, i) => (
         <mesh key={i}>
-          <sphereGeometry args={[1, 16, 16]} />
+          <sphereGeometry args={[1, 8, 8]} />
           <meshBasicMaterial color="#ffffff" transparent opacity={1} depthWrite={false} />
         </mesh>
       ))}
