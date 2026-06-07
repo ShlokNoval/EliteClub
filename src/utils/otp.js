@@ -74,3 +74,66 @@ export const sendFast2SmsOTP = async (phone, otpCode) => {
 
   return data;
 };
+
+/**
+ * Sends a 4-digit OTP code to the recipient's email using Resend.
+ * @param {string} email Recipient's email address
+ * @param {string} name Recipient's full name
+ * @param {string} otpCode Generated 4-digit code
+ * @returns {Promise<object>} Response data from Resend API
+ */
+export const sendResendOTP = async (email, name, otpCode) => {
+  const apiKey = import.meta.env.VITE_RESEND_API_KEY;
+  if (!apiKey || apiKey === 'your_resend_api_key_here') {
+    throw new Error('Resend API key is not configured in environment variables.');
+  }
+
+  if (!email) {
+    throw new Error('Email address is required to send OTP.');
+  }
+
+  // Attempting to send via Vercel Serverless Function first (Recommended for CORS)
+  try {
+    const apiRouteResponse = await fetch('/api/sendOtp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name, otpCode })
+    });
+    
+    if (apiRouteResponse.ok) {
+      return await apiRouteResponse.json();
+    }
+  } catch (err) {
+    // Fallback to direct client-side fetch (May throw CORS error on browser, but works in some environments)
+    console.warn('Vercel API route failed or not found, falling back to direct Resend API call...', err);
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: "EliteClub <onboarding@resend.dev>", // Note: Use verified domain for production
+      to: [email],
+      subject: "Your EliteClub Verification OTP",
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; text-align: center;">
+          <h2>EliteClub Check-In</h2>
+          <p>Hi ${name || 'Member'},</p>
+          <p>Your OTP for verifying your shareable plan check-in is:</p>
+          <h1 style="font-size: 32px; letter-spacing: 4px; color: #d4af37;">${otpCode}</h1>
+          <p>Please share this code with the hotel staff. It will expire in 10 minutes.</p>
+        </div>
+      `
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Resend API Error: ${response.status}`);
+  }
+
+  return await response.json();
+};
