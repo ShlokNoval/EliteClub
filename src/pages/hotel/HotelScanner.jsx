@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/common/Toast';
 import { supabase } from '../../lib/supabase';
 import { formatDate, getTodayStart } from '../../utils/helpers';
-import { generateOTP, sendFast2SmsOTP } from '../../utils/otp';
+import { generateOTP, sendFast2SmsOTP, sendResendOTP } from '../../utils/otp';
 
 const resultStyles = {
   valid: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20' },
@@ -213,16 +213,20 @@ export default function HotelScanner() {
         
         let smsSent = false;
         try {
-          if (member.phone) {
+          if (member.email) {
+            await sendResendOTP(member.email, member.full_name, code);
+            smsSent = true;
+            toast.success(`OTP sent successfully via Email to ${member.email}!`);
+          } else if (member.phone) {
             await sendFast2SmsOTP(member.phone, code);
             smsSent = true;
             toast.success(`OTP sent successfully via SMS to ${member.phone}!`);
           } else {
-            toast.error('No phone number registered for this member to send SMS OTP.');
+            toast.error('No email or phone number registered for this member to send OTP.');
           }
-        } catch (smsError) {
-          console.warn('[OTP SMS Service Error]', smsError.message);
-          toast.error(`SMS Delivery Failed: ${smsError.message}. Using Dev Mode fallback.`);
+        } catch (deliveryError) {
+          console.warn('[OTP Delivery Error]', deliveryError.message);
+          toast.error(`OTP Delivery Failed: ${deliveryError.message}. Using Dev Mode / Admin fallback.`);
         }
 
         setOtpStep({ member, cardId, smsSent });
@@ -275,6 +279,14 @@ export default function HotelScanner() {
   const verifyOtp = async () => {
     if (!otpCode || otpCode.length < 4) return;
     setScanning(true);
+
+    // Admin / Hotel Employee Bypass
+    if (otpCode === '0000') {
+      toast.success('Admin Bypass Applied');
+      await executeCheckIn(otpStep.member, otpStep.cardId);
+      return;
+    }
+
     const { data } = await supabase.from('profiles').select('otp_code, otp_expires_at').eq('id', otpStep.member.id).single();
     if (data?.otp_code === otpCode && new Date(data.otp_expires_at) > new Date()) {
       toast.success('OTP Verified');
@@ -483,11 +495,11 @@ export default function HotelScanner() {
                   <div className="space-y-4">
                     <div className="text-center text-xs text-champagne-dark p-3 bg-white/5 rounded-lg border border-white/10">
                       {otpStep.smsSent ? (
-                        <p className="text-green-400 font-medium">✓ OTP sent via SMS to: {otpStep.member.phone}</p>
+                        <p className="text-green-400 font-medium">✓ OTP sent to: {otpStep.member.email || otpStep.member.phone}</p>
                       ) : (
                         <>
-                          <p>OTP sent to: {otpStep.member.phone || otpStep.member.email || 'Registered Contact'}</p>
-                          <p className="mt-1 text-[10px] text-gold">(Dev Mode Check: View console or admin panel for OTP code)</p>
+                          <p>OTP intended for: {otpStep.member.email || otpStep.member.phone || 'Registered Contact'}</p>
+                          <p className="mt-1 text-[10px] text-gold">(Dev Mode Check: View console, or enter 0000 for Admin Bypass)</p>
                         </>
                       )}
                     </div>
