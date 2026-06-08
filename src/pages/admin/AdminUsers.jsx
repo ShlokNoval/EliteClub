@@ -64,6 +64,10 @@ export default function AdminUsers() {
       toast.error('Name, password and card ID are required.');
       return;
     }
+    if (newUser.plan === 'shareable' && !newUser.email.trim()) {
+      toast.error('Email is required for the Shareable plan.');
+      return;
+    }
     setSaving(true);
     try {
       // Generate a synthetic email if none provided
@@ -356,9 +360,11 @@ export default function AdminUsers() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-champagne-dark">Email (optional)</label>
+              <label className="block text-sm font-medium text-champagne-dark">
+                {newUser.plan === 'shareable' ? 'Email *' : 'Email (optional)'}
+              </label>
               <input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" placeholder="member@email.com" />
-              <p className="text-ash text-xs">If empty, auto-generated from Card ID</p>
+              <p className="text-ash text-xs">{newUser.plan === 'shareable' ? 'Required for OTP delivery' : 'If empty, auto-generated from Card ID'}</p>
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Plan *</label>
