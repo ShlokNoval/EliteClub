@@ -115,7 +115,7 @@ export const sendResendOTP = async (email, name, otpCode) => {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      from: "EliteClub <onboarding@resend.dev>", // Note: Use verified domain for production
+      from: "EliteClub <onboarding@eliteclubcsn.in>", // Note: Use verified domain for production
       to: [email],
       subject: "Your EliteClub Verification OTP",
       html: `

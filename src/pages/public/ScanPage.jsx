@@ -30,9 +30,9 @@ export default function ScanPage() {
   const fetchCard = async () => {
     try {
       const { data } = await supabase.from('qr_cards')
-        .select('*, profiles:assigned_to(id, full_name, member_id, plan, status, join_date, expiry_date)')
+        .select('*, profiles:assigned_to(id, full_name, member_id, plan, status, join_date, expiry_date, unlimited_day_used_at)')
         .eq('card_id', cardId.toUpperCase())
-        .single();
+        .maybeSingle();
 
       if (data) {
         setCard(data);
@@ -83,8 +83,44 @@ export default function ScanPage() {
 
   const handleCheckIn = async () => {
     if (!isHotel || !hotel || !member) return;
+    
+    // Block Shareable Plan check-ins from public scanner
+    if (member.plan === 'shareable') {
+      toast.error('Shareable plans require OTP. Please use the internal Scanner App to check this member in.');
+      return;
+    }
+
     setActionLoading(true);
     try {
+      // Check Quota Limits
+      const todayStart = getTodayStart();
+      const isUnlimitedToday = member.unlimited_day_used_at && new Date(member.unlimited_day_used_at) >= todayStart;
+
+      if (!isUnlimitedToday) {
+        const { data: billsToday } = await supabase.from('bills')
+          .select('nips_consumed, beers_consumed')
+          .eq('member_id', member.id)
+          .gte('created_at', todayStart.toISOString());
+        
+        let totalNips = 0, totalBeers = 0;
+        if (billsToday) {
+          billsToday.forEach(b => {
+            totalNips += b.nips_consumed || 0;
+            totalBeers += b.beers_consumed || 0;
+          });
+        }
+
+        const nipLimit = hotel.nip_limit || 4;
+        const beerLimit = hotel.beer_limit || (nipLimit * 2);
+        
+        if (totalNips >= nipLimit || totalBeers >= beerLimit) {
+          toast.error(`${member.full_name} has exhausted their daily allowance (${totalNips}/${nipLimit} Nips). Check-in blocked.`);
+          await supabase.from('scans').insert({ card_id: cardId.toUpperCase(), hotel_id: hotel.id, member_id: member.id, scan_type: 'check_in', result: 'blocked' });
+          setActionLoading(false);
+          return;
+        }
+      }
+
       // Create visit
       await supabase.from('visits').insert({ member_id: member.id, hotel_id: hotel.id, status: 'open' });
       // Log scan
@@ -100,18 +136,7 @@ export default function ScanPage() {
   };
 
   const handleCheckOut = async () => {
-    if (!isHotel || !hotel || !openVisit) return;
-    setActionLoading(true);
-    try {
-      await supabase.from('visits').update({ check_out: new Date().toISOString(), status: 'closed' }).eq('id', openVisit.id);
-      await supabase.from('scans').insert({ card_id: cardId.toUpperCase(), hotel_id: hotel.id, member_id: member.id, scan_type: 'check_out', result: 'valid' });
-      toast.success(`${member.full_name} checked out! Go to Bill Upload to record the bill.`);
-      await fetchCard(); // refresh
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setActionLoading(false);
-    }
+    // Deprecated: Check-out must happen via Bill Upload securely
   };
 
   return (
@@ -239,11 +264,8 @@ function GlassCardActions({ visitStatus, openVisit, hotel, memberName, onCheckIn
     return (
       <div className="glass-strong rounded-2xl p-6 text-center border border-blue-400/20">
         <LogOut size={28} className="text-blue-400 mx-auto mb-3" />
-        <h3 className="text-blue-400 font-semibold mb-1">Ready to Check Out</h3>
-        <p className="text-smoke text-sm mb-4">{memberName} is currently checked in. Scan to close the visit.</p>
-        <Button variant="gold" size="lg" icon={LogOut} className="w-full" onClick={onCheckOut} disabled={loading}>
-          {loading ? 'Processing...' : 'Check Out'}
-        </Button>
+        <h3 className="text-blue-400 font-semibold mb-1">Check-out Required</h3>
+        <p className="text-smoke text-sm mb-4">{memberName} is currently checked in. Please go to Upload Bill on your dashboard to log their consumption and securely check them out.</p>
       </div>
     );
   }
