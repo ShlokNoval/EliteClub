@@ -226,7 +226,7 @@ export default function HotelScanner() {
           }
         } catch (deliveryError) {
           console.warn('[OTP Delivery Error]', deliveryError.message);
-          toast.error(`OTP Delivery Failed: ${deliveryError.message}. Using Dev Mode / Admin fallback.`);
+          toast.error(`OTP Delivery Failed: ${deliveryError.message}`);
         }
 
         setOtpStep({ member, cardId, smsSent });
@@ -497,10 +497,7 @@ export default function HotelScanner() {
                       {otpStep.smsSent ? (
                         <p className="text-green-400 font-medium">✓ OTP sent to: {otpStep.member.email || otpStep.member.phone}</p>
                       ) : (
-                        <>
-                          <p>OTP intended for: {otpStep.member.email || otpStep.member.phone || 'Registered Contact'}</p>
-                          <p className="mt-1 text-[10px] text-gold">(Dev Mode Check: View console, or enter 0000 for Admin Bypass)</p>
-                        </>
+                        <p>OTP intended for: {otpStep.member.email || otpStep.member.phone || 'Registered Contact'}</p>
                       )}
                     </div>
                     <input
