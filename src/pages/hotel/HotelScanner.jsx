@@ -109,7 +109,7 @@ export default function HotelScanner() {
 
     try {
       // 1. Look up card
-      const { data: card } = await supabase.from('qr_cards').select('*, profiles:assigned_to(id, full_name, email, phone, plan, status, member_id, join_date, expiry_date, unlimited_day_used_at, photo_url)').eq('card_id', cardId).single();
+      const { data: card } = await supabase.from('qr_cards').select('*, profiles:assigned_to(id, full_name, email, phone, plan, status, member_id, join_date, expiry_date, unlimited_day_used_at, photo_url)').eq('card_id', cardId).maybeSingle();
 
       if (!card) {
         await logScan(cardId, null, 'check_in', 'not_found');
@@ -169,7 +169,7 @@ export default function HotelScanner() {
         if (totalNips >= nipLimit || totalBeers >= beerLimit) {
           await logScan(cardId, member.id, 'check_in', 'blocked');
           // Fetch fresh unlimited status directly from DB
-          const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', member.id).single();
+          const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', member.id).maybeSingle();
           const unlimitedStatus = getUnlimitedStatus(freshProfile?.unlimited_day_used_at);
           setResult({ 
             type: 'blocked', 
@@ -255,7 +255,7 @@ export default function HotelScanner() {
       if (hotelUpdateErr) console.error("Error updating hotel scan count:", hotelUpdateErr);
 
       // Fetch fresh unlimited status directly from DB to avoid stale data
-      const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', member.id).single();
+      const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', member.id).maybeSingle();
       const unlimitedStatus = getUnlimitedStatus(freshProfile?.unlimited_day_used_at);
 
       setResult({
@@ -287,7 +287,7 @@ export default function HotelScanner() {
       return;
     }
 
-    const { data } = await supabase.from('profiles').select('otp_code, otp_expires_at').eq('id', otpStep.member.id).single();
+    const { data } = await supabase.from('profiles').select('otp_code, otp_expires_at').eq('id', otpStep.member.id).maybeSingle();
     if (data?.otp_code === otpCode && new Date(data.otp_expires_at) > new Date()) {
       toast.success('OTP Verified');
       await executeCheckIn(otpStep.member, otpStep.cardId);
@@ -302,7 +302,7 @@ export default function HotelScanner() {
     setActivatingUnlimited(true);
     try {
       // Double-check cooldown from the database before activating
-      const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', memberId).single();
+      const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', memberId).maybeSingle();
       if (freshProfile?.unlimited_day_used_at) {
         const usedDate = new Date(freshProfile.unlimited_day_used_at);
         const todayStart = getTodayStart();
