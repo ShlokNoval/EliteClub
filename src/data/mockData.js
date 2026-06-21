@@ -19,8 +19,28 @@ export const brandInfo = {
 
 export const membershipPlans = [
   {
+    id: 'basic',
+    name: 'Basic Plan',
+    subtitle: 'The Starter Experience',
+    duration: '30 Days',
+    mrpDays: 0,
+    unlimitedDays: 0,
+    maxVisits: 5,
+    price: 999,
+    perDayValue: '₹200/visit',
+    features: [
+      '5 visits to selected partner venues',
+      'Liquor at MRP + VAT pricing',
+      'OTP verified check-in',
+      'Digital membership card with QR',
+      'Member-only offers & deals',
+    ],
+    popular: false,
+    color: 'silver',
+  },
+  {
     id: 'prime',
-    name: 'Prime Member',
+    name: 'Solo Plan',
     subtitle: 'The Personal Privilege',
     duration: '30 Days',
     mrpDays: 29,
@@ -30,6 +50,7 @@ export const membershipPlans = [
     features: [
       '29 days liquor at MRP + VAT',
       '1 day with NO consumption limits',
+      'OTP verified — must be present at venue',
       'Access to all partner venues',
       'Digital membership card with QR',
       'Priority seating at events',
@@ -40,7 +61,7 @@ export const membershipPlans = [
   },
   {
     id: 'shareable',
-    name: 'Shareable Member',
+    name: 'Shareable Plan',
     subtitle: 'The Shared Experience',
     duration: '30 Days',
     mrpDays: 29,
@@ -49,6 +70,7 @@ export const membershipPlans = [
     perDayValue: '₹200/day',
     features: [
       'Shareable with 1 other person via OTP',
+      'Owner not required to be present',
       '29 days liquor at MRP + VAT',
       '1 day with NO consumption limits',
       'Access to all partner venues',
@@ -104,7 +126,7 @@ export const howItWorks = [
   {
     step: 1,
     title: 'Choose Your Plan',
-    description: 'Select Prime or Shareable membership based on your lifestyle.',
+    description: 'Select Basic, Solo, or Shareable plan based on your lifestyle.',
     icon: 'Sparkles',
   },
   {
@@ -294,16 +316,16 @@ export const mockHotels = [
 
 // ═══ Mock Scans ═══
 export const mockScans = [
-  { id: 'SCN001', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'USR001', userName: 'Rajesh Kumar', timestamp: '2026-04-30T18:30:00', result: 'valid', plan: 'Shareable Member' },
-  { id: 'SCN002', hotelId: 'HTL002', hotelName: 'Spree', userId: 'USR002', userName: 'Amit Sharma', timestamp: '2026-04-30T19:15:00', result: 'valid', plan: 'Prime Member' },
-  { id: 'SCN003', hotelId: 'HTL003', hotelName: 'Patiala Peg', userId: 'USR003', userName: 'Priya Deshmukh', timestamp: '2026-04-30T20:00:00', result: 'expired', plan: 'Shareable Member' },
-  { id: 'SCN004', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'USR004', userName: 'Vikram Patil', timestamp: '2026-04-30T20:45:00', result: 'valid', plan: 'Prime Member' },
-  { id: 'SCN005', hotelId: 'HTL005', hotelName: 'Abhinandan', userId: 'USR001', userName: 'Rajesh Kumar', timestamp: '2026-04-29T21:00:00', result: 'valid', plan: 'Shareable Member' },
-  { id: 'SCN006', hotelId: 'HTL004', hotelName: 'The Hangover', userId: 'USR007', userName: 'Anita More', timestamp: '2026-04-29T19:30:00', result: 'expired', plan: 'Shareable Member' },
-  { id: 'SCN007', hotelId: 'HTL002', hotelName: 'Spree', userId: 'USR006', userName: 'Rohan Kulkarni', timestamp: '2026-04-29T18:00:00', result: 'valid', plan: 'Prime Member' },
-  { id: 'SCN008', hotelId: 'HTL008', hotelName: 'The Maple', userId: 'USR008', userName: 'Deepak Gaikwad', timestamp: '2026-04-28T20:30:00', result: 'valid', plan: 'Prime Member' },
+  { id: 'SCN001', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'USR001', userName: 'Rajesh Kumar', timestamp: '2026-04-30T18:30:00', result: 'valid', plan: 'Shareable Plan' },
+  { id: 'SCN002', hotelId: 'HTL002', hotelName: 'Spree', userId: 'USR002', userName: 'Amit Sharma', timestamp: '2026-04-30T19:15:00', result: 'valid', plan: 'Solo Plan' },
+  { id: 'SCN003', hotelId: 'HTL003', hotelName: 'Patiala Peg', userId: 'USR003', userName: 'Priya Deshmukh', timestamp: '2026-04-30T20:00:00', result: 'expired', plan: 'Shareable Plan' },
+  { id: 'SCN004', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'USR004', userName: 'Vikram Patil', timestamp: '2026-04-30T20:45:00', result: 'valid', plan: 'Solo Plan' },
+  { id: 'SCN005', hotelId: 'HTL005', hotelName: 'Abhinandan', userId: 'USR001', userName: 'Rajesh Kumar', timestamp: '2026-04-29T21:00:00', result: 'valid', plan: 'Shareable Plan' },
+  { id: 'SCN006', hotelId: 'HTL004', hotelName: 'The Hangover', userId: 'USR007', userName: 'Anita More', timestamp: '2026-04-29T19:30:00', result: 'expired', plan: 'Shareable Plan' },
+  { id: 'SCN007', hotelId: 'HTL002', hotelName: 'Spree', userId: 'USR006', userName: 'Rohan Kulkarni', timestamp: '2026-04-29T18:00:00', result: 'valid', plan: 'Solo Plan' },
+  { id: 'SCN008', hotelId: 'HTL008', hotelName: 'The Maple', userId: 'USR008', userName: 'Deepak Gaikwad', timestamp: '2026-04-28T20:30:00', result: 'valid', plan: 'Solo Plan' },
   { id: 'SCN009', hotelId: 'HTL001', hotelName: 'Elevate Bar', userId: 'UNKNOWN', userName: 'Unknown', timestamp: '2026-04-28T22:00:00', result: 'invalid', plan: 'N/A' },
-  { id: 'SCN010', hotelId: 'HTL007', hotelName: 'Hotel Balbeer', userId: 'USR004', userName: 'Vikram Patil', timestamp: '2026-04-28T19:15:00', result: 'valid', plan: 'Prime Member' },
+  { id: 'SCN010', hotelId: 'HTL007', hotelName: 'Hotel Balbeer', userId: 'USR004', userName: 'Vikram Patil', timestamp: '2026-04-28T19:15:00', result: 'valid', plan: 'Solo Plan' },
 ];
 
 // ═══ Admin Stats ═══
@@ -336,7 +358,7 @@ export const currentUser = {
   email: 'rajesh.kumar@email.com',
   phone: '+91 98765 11111',
   plan: 'shareable',
-  planName: 'Shareable Member',
+  planName: 'Shareable Plan',
   status: 'active',
   joinDate: '2026-04-01',
   expiryDate: '2026-04-10',
@@ -361,14 +383,14 @@ export const currentHotel = {
 
 // ═══ Recent Activity (Admin) ═══
 export const recentActivity = [
-  { id: 1, type: 'user_joined', message: 'Sneha Joshi registered for Shareable membership', time: '2 hours ago', icon: 'UserPlus' },
+  { id: 1, type: 'user_joined', message: 'Sneha Joshi registered for Shareable Plan', time: '2 hours ago', icon: 'UserPlus' },
   { id: 2, type: 'scan', message: 'QR scanned at Elevate Bar — Valid membership', time: '3 hours ago', icon: 'ScanLine' },
   { id: 3, type: 'hotel_request', message: 'Tokeo Vintage Sky Lounge applied for partnership', time: '5 hours ago', icon: 'Building2' },
   { id: 4, type: 'payment', message: 'Payment received from Vikram Patil — ₹1,700', time: '6 hours ago', icon: 'IndianRupee' },
-  { id: 5, type: 'expired', message: 'Anita More\'s Shareable membership expired', time: '1 day ago', icon: 'AlertTriangle' },
+  { id: 5, type: 'expired', message: 'Anita More\'s Shareable Plan expired', time: '1 day ago', icon: 'AlertTriangle' },
   { id: 6, type: 'hotel_verified', message: 'Silver Oak partnership request rejected', time: '2 days ago', icon: 'XCircle' },
   { id: 7, type: 'scan', message: 'Invalid QR scan attempt at Elevate Bar', time: '2 days ago', icon: 'ShieldAlert' },
-  { id: 8, type: 'user_joined', message: 'Deepak Gaikwad registered for Prime membership', time: '3 days ago', icon: 'UserPlus' },
+  { id: 8, type: 'user_joined', message: 'Deepak Gaikwad registered for Solo Plan', time: '3 days ago', icon: 'UserPlus' },
 ];
 
 // ═══ Revenue Chart Data ═══

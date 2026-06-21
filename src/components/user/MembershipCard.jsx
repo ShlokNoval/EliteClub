@@ -2,7 +2,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Crown } from 'lucide-react';
 import logo from '../../assets/logo.png';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getPlanDisplayName } from '../../utils/helpers';
 import { getQRScanUrl } from '../../lib/qrConfig';
 import { toPng } from 'html-to-image';
 import { useRef } from 'react';
@@ -88,7 +88,7 @@ export default function MembershipCard({ user, isActive, showCard, onToggle }) {
           <div className="flex items-start justify-between mb-4">
             <img src={logo} alt="EliteClub" className="h-10 w-auto" />
             <span className="text-xs text-gold font-semibold tracking-[0.15em] uppercase bg-gold/10 border border-gold/20 px-3 py-1.5 rounded-full text-center whitespace-nowrap shrink-0">
-              {user.plan ? `${user.plan} Member` : 'Member'}
+              {user.plan ? `${getPlanDisplayName(user.plan)}` : 'Member'}
             </span>
           </div>
 

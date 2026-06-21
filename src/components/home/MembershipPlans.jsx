@@ -141,7 +141,7 @@ export default function MembershipPlans() {
           subtitle="Select the membership that suits your lifestyle. Every plan comes with exclusive access to all partner venues."
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto items-stretch group/container">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 max-w-7xl mx-auto items-stretch group/container">
           {membershipPlans.map((plan, i) => (
             <MembershipCard key={plan.id} plan={plan} i={i} />
           ))}

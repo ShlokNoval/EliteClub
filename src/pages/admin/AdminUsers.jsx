@@ -9,7 +9,7 @@ import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/common/Toast';
-import { formatDate, maskPhone, maskEmail } from '../../utils/helpers';
+import { formatDate, maskPhone, maskEmail, getPlanDisplayName } from '../../utils/helpers';
 
 export default function AdminUsers() {
   const location = useLocation();
@@ -64,8 +64,8 @@ export default function AdminUsers() {
       toast.error('Name, password and card ID are required.');
       return;
     }
-    if (newUser.plan === 'shareable' && !newUser.email.trim()) {
-      toast.error('Email is required for the Shareable plan.');
+    if (!newUser.email.trim()) {
+      toast.error('Email is required for OTP delivery.');
       return;
     }
     setSaving(true);
@@ -296,7 +296,7 @@ export default function AdminUsers() {
                     <div>{viewMode === 'masked' ? maskEmail(user.email) : user.email}</div>
                     <div className="mt-0.5">{viewMode === 'masked' ? maskPhone(user.phone) : user.phone}</div>
                   </td>
-                  <td className="text-champagne-dark text-xs capitalize">{user.plan || '—'}</td>
+                  <td className="text-champagne-dark text-xs">{getPlanDisplayName(user.plan)}</td>
                   <td><Badge status={user.status} /></td>
                   <td className="text-smoke text-xs">{formatDate(user.join_date)}</td>
                   <td>
@@ -361,15 +361,16 @@ export default function AdminUsers() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">
-                {newUser.plan === 'shareable' ? 'Email *' : 'Email (optional)'}
+                Email *
               </label>
               <input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm" placeholder="member@email.com" />
-              <p className="text-ash text-xs">{newUser.plan === 'shareable' ? 'Required for OTP delivery' : 'If empty, auto-generated from Card ID'}</p>
+              <p className="text-ash text-xs">Required for OTP delivery</p>
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Plan *</label>
               <select value={newUser.plan} onChange={e => setNewUser(p => ({ ...p, plan: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
-                <option value="prime">Prime (₹4,000) - Single Person</option>
+                <option value="basic">Basic (₹999) - 5 Visits</option>
+                <option value="prime">Solo (₹4,000) - OTP Verified</option>
                 <option value="shareable">Shareable (₹6,000) - OTP Verified</option>
               </select>
             </div>
@@ -445,7 +446,8 @@ export default function AdminUsers() {
             <div className="space-y-2">
               <label className="block text-sm font-medium text-champagne-dark">Plan</label>
               <select value={editForm.plan || ''} onChange={e => setEditForm(p => ({ ...p, plan: e.target.value }))} className="w-full elite-input rounded-xl px-4 py-3 text-sm">
-                <option value="prime">Prime (₹4,000)</option>
+                <option value="basic">Basic (₹999)</option>
+                <option value="prime">Solo (₹4,000)</option>
                 <option value="shareable">Shareable (₹6,000)</option>
               </select>
             </div>

@@ -122,7 +122,7 @@ export const sendResendOTP = async (email, name, otpCode) => {
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; text-align: center;">
           <h2>EliteClub Check-In</h2>
           <p>Hi ${name || 'Member'},</p>
-          <p>Your OTP for verifying your shareable plan check-in is:</p>
+          <p>Your OTP for verifying your EliteClub check-in is:</p>
           <h1 style="font-size: 32px; letter-spacing: 4px; color: #d4af37;">${otpCode}</h1>
           <p>Please share this code with the hotel staff. It will expire in 10 minutes.</p>
         </div>

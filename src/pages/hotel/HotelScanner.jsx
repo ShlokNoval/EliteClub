@@ -8,7 +8,7 @@ import Button from '../../components/common/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/common/Toast';
 import { supabase } from '../../lib/supabase';
-import { formatDate, getTodayStart } from '../../utils/helpers';
+import { formatDate, getTodayStart, getPlanDisplayName } from '../../utils/helpers';
 import { generateOTP, sendFast2SmsOTP, sendResendOTP } from '../../utils/otp';
 
 const resultStyles = {
@@ -204,8 +204,35 @@ export default function HotelScanner() {
         return;
       }
 
-      // 5. Check-in Flow (OTP if shareable)
-      if (member.plan === 'shareable') {
+      // 5. Check-in Flow — OTP required for ALL plans
+      {
+        // Basic Plan: Check venue restriction
+        if (member.plan === 'basic') {
+          const { data: allowedVenues } = await supabase.from('basic_plan_venues').select('hotel_id');
+          const allowedIds = (allowedVenues || []).map(v => v.hotel_id);
+          if (!allowedIds.includes(hotel.id)) {
+            await logScan(cardId, member.id, 'check_in', 'blocked');
+            setResult({ type: 'blocked', title: 'Venue Not Available', desc: `${member.full_name}'s Basic Plan does not include this venue. Only selected partner venues are available.`, member });
+            setScanning(false);
+            return;
+          }
+        }
+
+        // Basic Plan: Check visit cap (5 visits max)
+        if (member.plan === 'basic') {
+          const { data: freshProfile } = await supabase.from('profiles').select('visits_used').eq('id', member.id).maybeSingle();
+          const visitsUsed = freshProfile?.visits_used || 0;
+          if (visitsUsed >= 5) {
+            // Auto-deactivate
+            await supabase.from('profiles').update({ status: 'expired' }).eq('id', member.id);
+            await logScan(cardId, member.id, 'check_in', 'blocked');
+            setResult({ type: 'blocked', title: 'Visit Limit Reached', desc: `${member.full_name} has used all 5 Basic Plan visits. The membership has been deactivated. Please renew or upgrade.`, member });
+            setScanning(false);
+            return;
+          }
+        }
+
+        // OTP for all plans
         const code = generateOTP();
         const expires = new Date(Date.now() + 10 * 60000).toISOString();
         await supabase.from('profiles').update({ otp_code: code, otp_expires_at: expires }).eq('id', member.id);
@@ -232,8 +259,6 @@ export default function HotelScanner() {
         setOtpStep({ member, cardId, smsSent });
         setScanning(false);
         return;
-      } else {
-        await executeCheckIn(member, cardId);
       }
     } catch (err) {
       console.error(err);
@@ -254,14 +279,28 @@ export default function HotelScanner() {
       const { error: hotelUpdateErr } = await supabase.from('hotels').update({ scan_count: (hotel.scan_count || 0) + 1 }).eq('id', hotel.id);
       if (hotelUpdateErr) console.error("Error updating hotel scan count:", hotelUpdateErr);
 
+      // Basic Plan: Increment visits_used and auto-deactivate if limit reached
+      if (member.plan === 'basic') {
+        const { data: freshP } = await supabase.from('profiles').select('visits_used').eq('id', member.id).maybeSingle();
+        const newVisitsUsed = (freshP?.visits_used || 0) + 1;
+        const updatePayload = { visits_used: newVisitsUsed };
+        if (newVisitsUsed >= 5) {
+          updatePayload.status = 'expired';
+          toast.info?.(`Basic Plan visit ${newVisitsUsed}/5 used. Membership will be deactivated.`) || toast.success(`Basic Plan visit ${newVisitsUsed}/5. Membership deactivated after this visit.`);
+        } else {
+          toast.success?.(`Basic Plan visit ${newVisitsUsed}/5 used.`);
+        }
+        await supabase.from('profiles').update(updatePayload).eq('id', member.id);
+      }
+
       // Fetch fresh unlimited status directly from DB to avoid stale data
       const { data: freshProfile } = await supabase.from('profiles').select('unlimited_day_used_at').eq('id', member.id).maybeSingle();
-      const unlimitedStatus = getUnlimitedStatus(freshProfile?.unlimited_day_used_at);
+      const unlimitedStatus = member.plan !== 'basic' ? getUnlimitedStatus(freshProfile?.unlimited_day_used_at) : { canActivate: false, isActiveToday: false, nextDate: null };
 
       setResult({
         type: 'check_in',
         title: '✓ Checked In',
-        desc: `${member.full_name} has been checked in successfully.`,
+        desc: `${member.full_name} has been checked in successfully.${member.plan === 'basic' ? ` (Visit ${((freshProfile?.visits_used || 0))} of 5)` : ''}`,
         member,
         visitId: newVisit?.id,
         showUnlimitedBtn: unlimitedStatus.canActivate,
@@ -447,7 +486,7 @@ export default function HotelScanner() {
                         </div>
                         <Badge status={result.member.status} className="ml-auto" />
                       </div>
-                      <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold capitalize">{result.member.plan}</span></div>
+                      <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold capitalize">{getPlanDisplayName(result.member.plan)}</span></div>
                       <div className="flex justify-between"><span className="text-smoke">Joined</span><span className="text-champagne">{formatDate(result.member.join_date)}</span></div>
                       <div className="flex justify-between"><span className="text-smoke">Expires</span><span className="text-champagne">{formatDate(result.member.expiry_date)}</span></div>
                     </div>
@@ -490,7 +529,7 @@ export default function HotelScanner() {
                   <div className="text-center mb-6">
                     <Lock size={32} className="text-gold mx-auto mb-3" />
                     <h3 className="font-playfair text-xl font-semibold text-champagne">OTP Verification</h3>
-                    <p className="text-smoke text-sm mt-1">Shareable plan requires OTP to check in.</p>
+                    <p className="text-smoke text-sm mt-1">OTP verification required for check-in.</p>
                   </div>
                   <div className="space-y-4">
                     <div className="text-center text-xs text-champagne-dark p-3 bg-white/5 rounded-lg border border-white/10">

@@ -10,7 +10,7 @@ import { useToast } from '../../components/common/Toast';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import logo from '../../assets/logo.png';
-import { formatDate, getTodayStart } from '../../utils/helpers';
+import { formatDate, getTodayStart, getPlanDisplayName } from '../../utils/helpers';
 
 export default function ScanPage() {
   const { cardId } = useParams();
@@ -84,9 +84,9 @@ export default function ScanPage() {
   const handleCheckIn = async () => {
     if (!isHotel || !hotel || !member) return;
     
-    // Block Shareable Plan check-ins from public scanner
-    if (member.plan === 'shareable') {
-      toast.error('Shareable plans require OTP. Please use the internal Scanner App to check this member in.');
+    // Block all check-ins from public scanner — OTP required via internal Scanner App
+    if (member) {
+      toast.error('All plans require OTP verification. Please use the internal Scanner App to check this member in.');
       return;
     }
 
@@ -185,7 +185,7 @@ export default function ScanPage() {
                 <p className="text-gold text-sm font-mono mt-1">{card.card_id}</p>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-6 text-xs">
-                <div><p className="text-smoke">Plan</p><p className="text-champagne-dark capitalize">{member.plan || '—'}</p></div>
+                <div><p className="text-smoke">Plan</p><p className="text-champagne-dark capitalize">{getPlanDisplayName(member.plan)}</p></div>
                 <div><p className="text-smoke">Valid Until</p><p className="text-champagne-dark">{formatDate(member.expiry_date)}</p></div>
               </div>
               <div className="flex items-end justify-between">

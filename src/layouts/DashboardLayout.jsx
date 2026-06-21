@@ -11,6 +11,7 @@ const adminLinks = [
   { name: 'QR Inventory', path: '/admin/cards', icon: CreditCard },
   { name: 'Hotels', path: '/admin/hotels', icon: Building2 },
   { name: 'Approvals', path: '/admin/approvals', icon: ShieldCheck },
+  { name: 'Basic Venues', path: '/admin/basic-venues', icon: MapPin },
   { name: 'Bills', path: '/admin/bills', icon: Receipt },
   { name: 'Events', path: '/admin/events', icon: Calendar },
   { name: 'Reports', path: '/admin/reports', icon: Search },

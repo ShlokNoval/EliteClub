@@ -57,3 +57,17 @@ export function getTodayStart() {
   now.setHours(4, 0, 0, 0);
   return now;
 }
+
+/**
+ * Maps internal plan ID to user-facing display name.
+ * @param {string} planId - The internal plan identifier (prime, shareable, basic)
+ * @returns {string} Human-readable plan name
+ */
+export function getPlanDisplayName(planId) {
+  const names = {
+    prime: 'Solo Plan',
+    shareable: 'Shareable Plan',
+    basic: 'Basic Plan',
+  };
+  return names[planId] || planId || '—';
+}

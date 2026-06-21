@@ -8,7 +8,7 @@ import MembershipCard from '../../components/user/MembershipCard';
 import Badge from '../../components/common/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { formatCurrency, formatDate, getTodayStart } from '../../utils/helpers';
+import { formatCurrency, formatDate, getTodayStart, getPlanDisplayName } from '../../utils/helpers';
 import { membershipPlans, partnerVenues, brandInfo } from '../../data/mockData';
 import logo from '../../assets/logo.png';
 
@@ -57,7 +57,7 @@ export default function UserDashboard() {
       const isUnlimitedToday = profile.unlimited_day_used_at && new Date(profile.unlimited_day_used_at) >= todayStart;
 
       // Always dynamically filter venues based on consumed quota, regardless of unlimited day
-      const availableVenues = hotels.filter(v => {
+      let availableVenues = hotels.filter(v => {
         // 1 nip = 2 beers. So 1 beer = 0.5 nips.
         // Calculate total consumption in "equivalent nips"
         const equivalentNipsConsumed = nipsToday + (beersToday / 2);
@@ -65,6 +65,13 @@ export default function UserDashboard() {
         // Venue is available if the consumed equivalent is less than the limit
         return equivalentNipsConsumed < (v.nip_limit || 4);
       });
+
+      if (profile.plan === 'basic') {
+        const { data: basicVenuesRes } = await supabase.from('basic_plan_venues').select('hotel_id');
+        const basicHotelIds = new Set((basicVenuesRes || []).map(bv => bv.hotel_id));
+        availableVenues = availableVenues.filter(v => basicHotelIds.has(v.id));
+      }
+
       setVenues(availableVenues);
 
       setStats({
@@ -154,9 +161,9 @@ export default function UserDashboard() {
               {/* Quick Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { icon: CreditCard, label: 'Plan', value: plan?.name || '—', color: 'text-gold' },
+                  { icon: CreditCard, label: 'Plan', value: getPlanDisplayName(profile?.plan), color: 'text-gold' },
                   { icon: Calendar, label: 'Expires', value: formatDate(profile.expiry_date), color: 'text-champagne' },
-                  { icon: MapPin, label: 'Visits', value: loading ? '...' : stats.visits, color: 'text-green-400' },
+                  { icon: MapPin, label: profile?.plan === 'basic' ? 'Visits Remaining' : 'Total Visits', value: loading ? '...' : (profile?.plan === 'basic' ? Math.max(0, 5 - (profile?.visits_used || 0)) : stats.visits), color: 'text-green-400' },
                   { icon: IndianRupee, label: 'Saved', value: loading ? '...' : formatCurrency(stats.totalSaved), color: 'text-gold-light' },
                 ].map((stat, i) => (
                   <GlassCard key={i} delay={i * 0.1} className="text-center p-4">
@@ -284,52 +291,54 @@ export default function UserDashboard() {
                 <div className="border-t border-gold/10 pt-4 space-y-3 text-sm">
                   <div className="flex justify-between"><span className="text-smoke">Member ID</span><span className="text-champagne font-mono">{profile.member_id}</span></div>
                   <div className="flex justify-between"><span className="text-smoke">Phone</span><span className="text-champagne">{profile.phone || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold font-medium">{plan?.name || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-smoke">Plan</span><span className="text-gold font-medium">{getPlanDisplayName(profile?.plan)}</span></div>
                   <div className="flex justify-between"><span className="text-smoke">Member Since</span><span className="text-champagne">{formatDate(profile.join_date)}</span></div>
-                  <div className="flex flex-col gap-1 border-t border-white/5 pt-3 mt-3">
-                    <div className="flex justify-between items-start">
-                      <span className="text-smoke flex items-center gap-1 mt-0.5"><Wine size={12}/> 1-Day Unlimited</span>
-                      {(() => {
-                        let statusText = "Available Today";
-                        let isAvailable = true;
-                        let nextDate = null;
-                        
-                        if (profile.unlimited_day_used_at) {
-                          const usedDate = new Date(profile.unlimited_day_used_at);
-                          const todayStartLocal = getTodayStart();
+                  {profile?.plan !== 'basic' && (
+                    <div className="flex flex-col gap-1 border-t border-white/5 pt-3 mt-3">
+                      <div className="flex justify-between items-start">
+                        <span className="text-smoke flex items-center gap-1 mt-0.5"><Wine size={12}/> 1-Day Unlimited</span>
+                        {(() => {
+                          let statusText = "Available Today";
+                          let isAvailable = true;
+                          let nextDate = null;
                           
-                          if (usedDate >= todayStartLocal) {
-                            statusText = "Active Today";
-                          } else {
-                            nextDate = new Date(usedDate);
-                            nextDate.setDate(nextDate.getDate() + 30);
+                          if (profile.unlimited_day_used_at) {
+                            const usedDate = new Date(profile.unlimited_day_used_at);
+                            const todayStartLocal = getTodayStart();
                             
-                            if (new Date() < nextDate) {
-                              isAvailable = false;
-                              statusText = "Used on " + formatDate(profile.unlimited_day_used_at);
+                            if (usedDate >= todayStartLocal) {
+                              statusText = "Active Today";
+                            } else {
+                              nextDate = new Date(usedDate);
+                              nextDate.setDate(nextDate.getDate() + 30);
+                              
+                              if (new Date() < nextDate) {
+                                isAvailable = false;
+                                statusText = "Used on " + formatDate(profile.unlimited_day_used_at);
+                              }
                             }
                           }
-                        }
-                        
-                        return (
-                          <div className="text-right">
-                             <span className={isAvailable ? "text-green-400 font-medium" : "text-ash"}>
-                               {statusText}
-                             </span>
-                             {!isAvailable && nextDate && (
-                               <div className="text-[10px] text-smoke mt-1">Next available: {formatDate(nextDate)}</div>
-                             )}
-                          </div>
-                        );
-                      })()}
+                          
+                          return (
+                            <div className="text-right">
+                               <span className={isAvailable ? "text-green-400 font-medium" : "text-ash"}>
+                                 {statusText}
+                               </span>
+                               {!isAvailable && nextDate && (
+                                 <div className="text-[10px] text-smoke mt-1">Next available: {formatDate(nextDate)}</div>
+                               )}
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </GlassCard>
 
               {/* Partner Venues */}
               <GlassCard hover={false}>
-                <h3 className="text-sm font-semibold text-gold mb-3">Available Venues ({venues.length})</h3>
+                <h3 className="text-sm font-semibold text-gold mb-3">{profile?.plan === 'basic' ? 'Basic Plan Selected Venues' : 'Available Venues'} ({venues.length})</h3>
                 <div className="space-y-3 max-h-48 overflow-y-auto">
                   {venues.map((v) => (
                     <div key={v.id} className="flex flex-col gap-1 py-2 border-b border-white/5 last:border-0">

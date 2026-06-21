@@ -194,9 +194,9 @@ export default function MembershipReveal({ sectionRef }) {
             style={{ opacity: cardsOpacity }}
             className="absolute inset-0 flex items-center justify-center pointer-events-auto"
           >
-            <div className="w-full max-w-5xl mx-auto px-6 lg:px-8">
+            <div className="w-full max-w-7xl mx-auto px-6 lg:px-8">
               <div
-                className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch"
+                className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch"
                 style={{ transform: 'scale(0.80)', transformOrigin: 'center' }}
               >
                 {membershipPlans.map((plan, i) => (

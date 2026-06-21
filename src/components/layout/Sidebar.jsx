@@ -15,6 +15,7 @@ const adminLinks = [
   { to: '/admin/cards', icon: CreditCard, label: 'QR Cards' },
   { to: '/admin/bills', icon: Receipt, label: 'Bills' },
   { to: '/admin/approvals', icon: ShieldAlert, label: 'Approvals' },
+  { to: '/admin/basic-venues', icon: MapPin, label: 'Basic Venues' },
   { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
   { to: '/admin/events', icon: Calendar, label: 'Events' },
   { to: '/admin/messages', icon: MessageSquare, label: 'Messages' },
